@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Estoque</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item active"><span class="icon">📦</span> Estoque</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Estoque</div>
+                <div class="page-subtitle">Aparelhos, seminovos recebidos em troca, acessórios e peças</div>
+            </div>
+            <button class="btn btn-primary" onclick="abrirModalProduto()">+ Novo produto</button>
+        </div>
+
+        <div class="content">
+            <div class="search-bar">
+                <input type="text" id="busca" placeholder="Buscar por nome, modelo ou IMEI...">
+                <select id="filtro-categoria" style="width:200px;">
+                    <option value="">Todas as categorias</option>
+                    <option value="aparelho_novo">Aparelho novo</option>
+                    <option value="aparelho_seminovo">Aparelho seminovo</option>
+                    <option value="acessorio">Acessório</option>
+                    <option value="peca">Peça</option>
+                </select>
+            </div>
+
+            <div class="panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Categoria</th>
+                            <th>IMEI</th>
+                            <th>Origem</th>
+                            <th class="text-right">Qtd.</th>
+                            <th class="text-right">Preço venda</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-produtos">
+                        <tr><td colspan="7" class="text-muted">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal simples de cadastro -->
+<div id="modal-produto" style="display:none; position:fixed; inset:0; background:rgba(18,23,43,0.45); align-items:center; justify-content:center; z-index:50;">
+    <div style="background:#fff; border-radius:8px; width:560px; max-height:88vh; overflow-y:auto; padding:24px;">
+        <div class="flex-between" style="margin-bottom:18px;">
+            <h3 style="font-size:16px;">Novo produto</h3>
+            <span style="cursor:pointer; color:#6B7080;" onclick="fecharModalProduto()">✕</span>
+        </div>
+        <form id="form-produto">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Nome do produto</label>
+                    <input type="text" id="p-nome" required placeholder="Ex: iPhone 13 128GB">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="p-categoria">
+                        <option value="aparelho_novo">Aparelho novo</option>
+                        <option value="aparelho_seminovo">Aparelho seminovo</option>
+                        <option value="acessorio">Acessório</option>
+                        <option value="peca">Peça</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Condição</label>
+                    <select id="p-condicao">
+                        <option value="novo">Novo</option>
+                        <option value="seminovo_excelente">Seminovo - Excelente</option>
+                        <option value="seminovo_bom">Seminovo - Bom</option>
+                        <option value="seminovo_regular">Seminovo - Regular</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Marca</label>
+                    <input type="text" id="p-marca" placeholder="Ex: Apple">
+                </div>
+                <div class="form-group">
+                    <label>Modelo</label>
+                    <input type="text" id="p-modelo" placeholder="Ex: iPhone 13">
+                </div>
+                <div class="form-group">
+                    <label>IMEI</label>
+                    <input type="text" id="p-imei">
+                </div>
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" id="p-quantidade" value="1" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Estoque mínimo (alerta)</label>
+                    <input type="number" id="p-estoque-minimo" value="2" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Preço de custo (R$)</label>
+                    <input type="number" id="p-custo" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Preço de venda (R$)</label>
+                    <input type="number" id="p-venda" step="0.01" required>
+                </div>
+                <div class="form-group full">
+                    <label>Observações</label>
+                    <textarea id="p-obs"></textarea>
+                </div>
+            </div>
+            <div class="flex-between mt-16">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalProduto()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar produto</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de histórico de movimentações -->
+<div id="modal-historico" style="display:none; position:fixed; inset:0; background:rgba(18,23,43,0.45); align-items:center; justify-content:center; z-index:50;">
+    <div style="background:#fff; border-radius:8px; width:600px; max-height:80vh; overflow-y:auto; padding:24px;">
+        <div class="flex-between" style="margin-bottom:18px;">
+            <h3 style="font-size:16px;" id="titulo-historico">Histórico de movimentações</h3>
+            <span style="cursor:pointer; color:#6B7080;" onclick="fecharModalHistorico()">✕</span>
+        </div>
+        <table>
+            <thead><tr><th>Data</th><th>Tipo</th><th class="text-right">Qtd.</th><th>Referência</th><th>Usuário</th></tr></thead>
+            <tbody id="tabela-historico"></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/produtos.js"></script>
+</body>
+</html>

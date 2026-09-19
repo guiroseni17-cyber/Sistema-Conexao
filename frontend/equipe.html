@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Equipe</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item active somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Equipe</div>
+                <div class="page-subtitle">Quem tem acesso ao sistema (apenas administradores gerenciam aqui)</div>
+            </div>
+            <button class="btn btn-primary" onclick="abrirModalUsuario()">+ Novo usuário</button>
+        </div>
+
+        <div class="content">
+            <div class="panel">
+                <table>
+                    <thead>
+                        <tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody id="tabela-usuarios">
+                        <tr><td colspan="5" class="text-muted">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-usuario" style="display:none; position:fixed; inset:0; background:rgba(18,23,43,0.45); align-items:center; justify-content:center; z-index:50;">
+    <div style="background:#fff; border-radius:8px; width:420px; padding:24px;">
+        <div class="flex-between" style="margin-bottom:18px;">
+            <h3 style="font-size:16px;">Novo usuário</h3>
+            <span style="cursor:pointer; color:#6B7080;" onclick="fecharModalUsuario()">✕</span>
+        </div>
+        <form id="form-usuario">
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" id="u-nome" required>
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="u-email" required>
+            </div>
+            <div class="form-group">
+                <label>Senha provisória</label>
+                <input type="text" id="u-senha" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label>Papel</label>
+                <select id="u-papel">
+                    <option value="vendedor">Vendedor</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+            <div class="flex-between mt-16">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalUsuario()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar usuário</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/equipe.js"></script>
+</body>
+</html>

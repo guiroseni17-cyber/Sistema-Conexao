@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Minha conta</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Minha conta</div>
+                <div class="page-subtitle">Trocar a sua senha de acesso</div>
+            </div>
+        </div>
+
+        <div class="content" style="max-width:420px;">
+            <div class="panel">
+                <div style="padding:20px;">
+                    <div id="senha-msg" style="display:none; margin-bottom:14px; font-size:12.5px;"></div>
+                    <form id="form-senha">
+                        <div class="form-group">
+                            <label>Senha atual</label>
+                            <input type="password" id="senha-atual" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nova senha</label>
+                            <input type="password" id="senha-nova" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Salvar nova senha</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/minha-conta.js"></script>
+</body>
+</html>

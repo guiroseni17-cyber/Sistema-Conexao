@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Nova Compra</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item active"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Nova compra</div>
+                <div class="page-subtitle">Os itens recebidos entram automaticamente no estoque ao salvar</div>
+            </div>
+            <a href="compras.html" class="btn btn-secondary">Voltar</a>
+        </div>
+
+        <div class="content" style="max-width: 900px;">
+            <form id="form-compra">
+
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3>1. Fornecedor</h3></div>
+                    <div style="padding:18px 20px;">
+                        <div class="form-group full">
+                            <label>Fornecedor</label>
+                            <select id="fornecedor_id" required>
+                                <option value="">Selecione um fornecedor...</option>
+                            </select>
+                        </div>
+                        <a href="fornecedores.html" style="font-size:12.5px; color:var(--text-muted);">+ Cadastrar novo fornecedor</a>
+                    </div>
+                </div>
+
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-header">
+                        <h3>2. Itens recebidos</h3>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="adicionarItemCompra()">+ Adicionar item</button>
+                    </div>
+                    <div style="padding:18px 20px;" id="itens-compra-container"></div>
+                </div>
+
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3>3. Pagamento ao fornecedor</h3></div>
+                    <div style="padding:18px 20px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Valor já pago agora (R$)</label>
+                                <input type="number" id="valor_pago" step="0.01" value="0" onchange="calcularResumoCompra()">
+                                <span class="text-muted" style="font-size:12px;">Deixe 0 se ainda não pagou nada — fica marcado como "Pendente" e dá pra pagar depois.</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Observações</label>
+                                <input type="text" id="observacoes">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-box mt-16">
+                    <div class="summary-row"><span>Total da compra</span><span id="resumo-total">R$ 0,00</span></div>
+                    <div class="summary-row"><span>Valor pago agora</span><span id="resumo-pago">R$ 0,00</span></div>
+                    <div class="summary-row total"><span>Fica em aberto com o fornecedor</span><span id="resumo-aberto">R$ 0,00</span></div>
+                </div>
+
+                <div class="flex-between mt-16" style="margin-bottom:40px;">
+                    <a href="compras.html" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Registrar compra</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/nova-compra.js"></script>
+</body>
+</html>

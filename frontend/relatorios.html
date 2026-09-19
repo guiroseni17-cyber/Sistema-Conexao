@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Relatórios</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item active"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Relatórios</div>
+                <div class="page-subtitle">Vendas, lucro estimado e compras por período</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="panel" style="margin-bottom:20px;">
+                <div style="padding:16px 20px; display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>De</label>
+                        <input type="date" id="data-inicio">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Até</label>
+                        <input type="date" id="data-fim">
+                    </div>
+                    <button class="btn btn-secondary" onclick="definirPeriodo(7)">Últimos 7 dias</button>
+                    <button class="btn btn-secondary" onclick="definirPeriodo(30)">Últimos 30 dias</button>
+                    <button class="btn btn-primary" onclick="gerarRelatorios()">Gerar relatório</button>
+                </div>
+            </div>
+
+            <div class="stats-grid" id="stats-vendas">
+                <div class="stat-card"><div class="label">Faturamento bruto</div><div class="value">--</div></div>
+                <div class="stat-card accent-green"><div class="label">Lucro estimado</div><div class="value">--</div></div>
+                <div class="stat-card"><div class="label">Pedidos no período</div><div class="value">--</div></div>
+                <div class="stat-card accent-amber"><div class="label">Abatido em trocas</div><div class="value">--</div></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px;">
+                <div class="panel">
+                    <div class="panel-header"><h3>Produtos mais vendidos</h3></div>
+                    <table>
+                        <thead><tr><th>Produto</th><th class="text-right">Qtd.</th><th class="text-right">Valor</th></tr></thead>
+                        <tbody id="tabela-mais-vendidos"><tr><td colspan="3" class="text-muted">Escolha um período e gere o relatório</td></tr></tbody>
+                    </table>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><h3>Vendas por forma de pagamento</h3></div>
+                    <table>
+                        <thead><tr><th>Forma</th><th class="text-right">Pedidos</th><th class="text-right">Valor</th></tr></thead>
+                        <tbody id="tabela-formas-pagamento"><tr><td colspan="3" class="text-muted">-</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-header"><h3>Vendas por vendedor</h3></div>
+                <table>
+                    <thead><tr><th>Vendedor</th><th class="text-right">Pedidos</th><th class="text-right">Valor vendido</th></tr></thead>
+                    <tbody id="tabela-vendedores"><tr><td colspan="3" class="text-muted">-</td></tr></tbody>
+                </table>
+            </div>
+
+            <div class="panel-header" style="padding:0; margin-bottom:10px;"><h3>Compras no período</h3></div>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="label">Total comprado</div><div class="value" id="compras-total">--</div></div>
+                <div class="stat-card"><div class="label">Total pago</div><div class="value" id="compras-pago">--</div></div>
+                <div class="stat-card accent-amber"><div class="label">Em aberto com fornecedores</div><div class="value" id="compras-aberto">--</div></div>
+            </div>
+            <div class="panel">
+                <table>
+                    <thead><tr><th>Fornecedor</th><th class="text-right">Compras</th><th class="text-right">Valor comprado</th><th class="text-right">Em aberto</th></tr></thead>
+                    <tbody id="tabela-fornecedores-relatorio"><tr><td colspan="4" class="text-muted">-</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/relatorios.js"></script>
+</body>
+</html>

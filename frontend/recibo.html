@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Recibo</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+    body { background: #E9EAEE; padding: 30px; }
+    .recibo {
+        max-width: 620px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 8px;
+        padding: 36px 40px;
+    }
+    .recibo-topo { display:flex; justify-content:space-between; align-items:start; border-bottom: 2px solid var(--navy); padding-bottom:16px; margin-bottom:20px; }
+    .recibo-topo .loja { font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:20px; }
+    .recibo-topo .numero { text-align:right; font-size:13px; color:var(--text-muted); }
+    .recibo-secao { margin-bottom:18px; }
+    .recibo-secao h4 { font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:8px; }
+    .recibo-linha { display:flex; justify-content:space-between; padding:5px 0; font-size:13.5px; border-bottom:1px dashed var(--border); }
+    .recibo-total { display:flex; justify-content:space-between; font-size:18px; font-weight:700; margin-top:14px; padding-top:14px; border-top:2px solid var(--navy); }
+    .recibo-acoes { text-align:center; margin-top:24px; }
+    @media print {
+        body { background:#fff; padding:0; }
+        .recibo { box-shadow:none; padding:0; }
+        .recibo-acoes { display:none; }
+    }
+</style>
+</head>
+<body>
+    <div class="recibo" id="recibo">
+        <div class="recibo-topo">
+            <div class="loja">忍 FoneNinja</div>
+            <div class="numero" id="r-numero">Carregando...</div>
+        </div>
+
+        <div class="recibo-secao">
+            <h4>Cliente</h4>
+            <div id="r-cliente"></div>
+        </div>
+
+        <div class="recibo-secao">
+            <h4>Itens</h4>
+            <div id="r-itens"></div>
+        </div>
+
+        <div class="recibo-secao" id="r-secao-troca" style="display:none;">
+            <h4>Aparelho recebido em troca</h4>
+            <div id="r-troca"></div>
+        </div>
+
+        <div class="recibo-linha"><span>Subtotal</span><span id="r-subtotal">-</span></div>
+        <div class="recibo-linha" id="r-linha-troca" style="display:none;"><span>Abatido na troca</span><span id="r-valor-troca">-</span></div>
+        <div class="recibo-linha"><span>Forma de pagamento</span><span id="r-forma">-</span></div>
+        <div class="recibo-total"><span>Total pago</span><span id="r-total">-</span></div>
+    </div>
+
+    <div class="recibo-acoes">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir recibo</button>
+    </div>
+
+<script src="js/api.js"></script>
+<script src="js/recibo.js"></script>
+</body>
+</html>

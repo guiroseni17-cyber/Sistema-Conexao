@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Novo Pedido</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item active"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title" id="titulo-pagina">Novo pedido de venda</div>
+                <div class="page-subtitle" id="subtitulo-pagina">Se houver troca, o aparelho recebido entra automaticamente no estoque</div>
+            </div>
+            <a href="pedidos.html" class="btn btn-secondary">Voltar</a>
+        </div>
+
+        <div class="content" style="max-width: 900px;">
+            <form id="form-pedido">
+
+                <!-- Cliente -->
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3>1. Cliente</h3></div>
+                    <div style="padding:18px 20px;">
+                        <div class="form-group full">
+                            <label>Cliente</label>
+                            <select id="cliente_id" required>
+                                <option value="">Selecione um cliente...</option>
+                            </select>
+                        </div>
+                        <a href="clientes.html" style="font-size:12.5px; color:var(--text-muted);">+ Cadastrar novo cliente</a>
+                    </div>
+                </div>
+
+                <!-- Itens vendidos -->
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-header">
+                        <h3>2. Itens vendidos (saída do estoque)</h3>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="adicionarItem()">+ Adicionar item</button>
+                    </div>
+                    <div style="padding:18px 20px;" id="itens-container"></div>
+                </div>
+
+                <!-- Troca -->
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3>3. Troca de aparelho (opcional)</h3></div>
+                    <div style="padding:18px 20px;">
+
+                        <!-- Mostrado só ao editar um pedido que já teve troca: o aparelho já está no
+                             estoque, então aqui só dá pra ajustar o valor abatido. Para corrigir os
+                             dados do aparelho em si (nome, condição, preço...), edite em Estoque. -->
+                        <div id="troca-existente" style="display:none;">
+                            <p class="text-muted" style="font-size:12.5px; margin-bottom:10px;">
+                                Este pedido já tem um aparelho recebido em troca (cadastrado no estoque).
+                                Para editar os dados do aparelho, acesse <a href="produtos.html">Estoque</a>.
+                                Aqui você só pode ajustar o valor abatido.
+                            </p>
+                            <div class="form-group" style="max-width:260px;">
+                                <label>Valor abatido no pedido (R$)</label>
+                                <input type="number" id="t-valor-existente" step="0.01" value="0">
+                            </div>
+                        </div>
+
+                        <div class="trade-box" id="trade-box">
+                            <label class="trade-toggle">
+                                <input type="checkbox" id="tem-troca" onchange="toggleTroca()">
+                                O cliente deu um aparelho na troca
+                            </label>
+                            <div class="trade-fields" id="trade-fields">
+                                <p class="text-muted" style="font-size:12.5px; margin-bottom:14px;">
+                                    Preencha os dados do aparelho recebido — ele será cadastrado automaticamente no estoque ao finalizar o pedido.
+                                </p>
+                                <div class="form-grid">
+                                    <div class="form-group full">
+                                        <label>Nome do aparelho recebido</label>
+                                        <input type="text" id="t-nome" placeholder="Ex: iPhone 11 128GB">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Marca</label>
+                                        <input type="text" id="t-marca">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Modelo</label>
+                                        <input type="text" id="t-modelo">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>IMEI</label>
+                                        <input type="text" id="t-imei">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Condição</label>
+                                        <select id="t-condicao">
+                                            <option value="seminovo_excelente">Seminovo - Excelente</option>
+                                            <option value="seminovo_bom" selected>Seminovo - Bom</option>
+                                            <option value="seminovo_regular">Seminovo - Regular</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Valor abatido no pedido (R$)</label>
+                                        <input type="number" id="t-valor-abatido" step="0.01" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Preço sugerido p/ revenda (R$)</label>
+                                        <input type="number" id="t-preco-venda" step="0.01" value="0">
+                                    </div>
+                                    <div class="form-group full">
+                                        <label>Observações (estado do aparelho)</label>
+                                        <textarea id="t-obs" placeholder="Ex: tela com micro-riscos, bateria 89%..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagamento e resumo -->
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3>4. Pagamento</h3></div>
+                    <div style="padding:18px 20px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Forma de pagamento</label>
+                                <select id="forma_pagamento">
+                                    <option>Pix</option>
+                                    <option>Dinheiro</option>
+                                    <option>Cartão de débito</option>
+                                    <option>Cartão de crédito</option>
+                                    <option>Cartão de crédito parcelado</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Observações do pedido</label>
+                                <input type="text" id="observacoes">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-box mt-16">
+                    <div class="summary-row"><span>Subtotal itens vendidos</span><span id="resumo-subtotal">R$ 0,00</span></div>
+                    <div class="summary-row discount" id="linha-troca" style="display:none;"><span>Valor abatido na troca</span><span id="resumo-troca">- R$ 0,00</span></div>
+                    <div class="summary-row total"><span>Total a receber</span><span id="resumo-final">R$ 0,00</span></div>
+                </div>
+
+                <div class="flex-between mt-16" style="margin-bottom:40px;">
+                    <a href="pedidos.html" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Finalizar pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/novo-pedido.js"></script>
+</body>
+</html>

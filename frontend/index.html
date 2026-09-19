@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Dashboard</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item active"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Dashboard</div>
+                <div class="page-subtitle" id="data-hoje"></div>
+            </div>
+            <a href="novo-pedido.html" class="btn btn-primary">+ Novo pedido</a>
+        </div>
+
+        <div class="content">
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Faturamento hoje</div>
+                    <div class="value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Pedidos hoje</div>
+                    <div class="value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Itens em estoque</div>
+                    <div class="value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Clientes cadastrados</div>
+                    <div class="value">--</div>
+                </div>
+                <div class="stat-card accent-amber">
+                    <div class="label">A pagar a fornecedores</div>
+                    <div class="value">--</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap:16px;">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Últimos pedidos</h3>
+                        <a href="pedidos.html" class="text-muted" style="font-size:12.5px;">Ver todos</a>
+                    </div>
+                    <table>
+                        <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th class="text-right">Valor</th></tr></thead>
+                        <tbody id="ultimos-pedidos"><tr><td colspan="4" class="text-muted">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header"><h3>Estoque baixo</h3></div>
+                    <table>
+                        <thead><tr><th>Produto</th><th class="text-right">Qtd.</th></tr></thead>
+                        <tbody id="estoque-baixo"><tr><td colspan="2" class="text-muted">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

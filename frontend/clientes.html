@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Clientes</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="clientes.html" class="nav-item active"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Clientes</div>
+                <div class="page-subtitle">Cadastro de clientes da loja</div>
+            </div>
+            <button class="btn btn-primary" onclick="abrirModalCliente()">+ Novo cliente</button>
+        </div>
+
+        <div class="content">
+            <div class="search-bar">
+                <input type="text" id="busca" placeholder="Buscar por nome, telefone ou CPF...">
+            </div>
+
+            <div class="panel">
+                <table>
+                    <thead>
+                        <tr><th>Nome</th><th>Telefone</th><th>CPF/CNPJ</th><th>E-mail</th><th></th></tr>
+                    </thead>
+                    <tbody id="tabela-clientes">
+                        <tr><td colspan="4" class="text-muted">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-cliente" style="display:none; position:fixed; inset:0; background:rgba(18,23,43,0.45); align-items:center; justify-content:center; z-index:50;">
+    <div style="background:#fff; border-radius:8px; width:480px; padding:24px;">
+        <div class="flex-between" style="margin-bottom:18px;">
+            <h3 style="font-size:16px;" id="titulo-modal-cliente">Novo cliente</h3>
+            <span style="cursor:pointer; color:#6B7080;" onclick="fecharModalCliente()">✕</span>
+        </div>
+        <form id="form-cliente">
+            <div class="form-group">
+                <label>Nome completo</label>
+                <input type="text" id="c-nome" required>
+            </div>
+            <div class="form-group">
+                <label>Telefone</label>
+                <input type="text" id="c-telefone" placeholder="(00) 00000-0000">
+            </div>
+            <div class="form-group">
+                <label>CPF/CNPJ</label>
+                <input type="text" id="c-cpf">
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="c-email">
+            </div>
+            <div class="form-group">
+                <label>Endereço</label>
+                <input type="text" id="c-endereco">
+            </div>
+            <div class="flex-between mt-16">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalCliente()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar cliente</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/clientes.js"></script>
+</body>
+</html>
