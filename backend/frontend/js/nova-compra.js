@@ -2,20 +2,50 @@ let produtosExistentes = [];
 let contadorItensCompra = 0;
 
 async function inicializarCompra() {
-    const fornecedores = await api.fornecedores.listar();
-    const selectFornecedor = document.getElementById('fornecedor_id');
-    fornecedores.forEach(f => {
-        const opt = document.createElement('option');
-        opt.value = f.id;
-        opt.textContent = f.nome;
-        selectFornecedor.appendChild(opt);
-    });
+    await recarregarFornecedores();
 
     produtosExistentes = await api.produtos.listar('?busca=');
 
     adicionarItemCompra();
     calcularResumoCompra();
 }
+
+async function recarregarFornecedores(selecionarId) {
+    const fornecedores = await api.fornecedores.listar();
+    const selectFornecedor = document.getElementById('fornecedor_id');
+    selectFornecedor.innerHTML = '<option value="">Selecione um fornecedor...</option>';
+    fornecedores.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f.id;
+        opt.textContent = f.nome;
+        selectFornecedor.appendChild(opt);
+    });
+    if (selecionarId) selectFornecedor.value = selecionarId;
+}
+
+function abrirModalNovoFornecedor() {
+    document.getElementById('form-novo-fornecedor').reset();
+    document.getElementById('modal-novo-fornecedor').style.display = 'flex';
+}
+function fecharModalNovoFornecedor() {
+    document.getElementById('modal-novo-fornecedor').style.display = 'none';
+}
+
+document.getElementById('form-novo-fornecedor').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+        const resultado = await api.fornecedores.criar({
+            nome: document.getElementById('nf-nome').value,
+            telefone: document.getElementById('nf-telefone').value,
+            cnpj_cpf: document.getElementById('nf-cnpj').value,
+            email: document.getElementById('nf-email').value
+        });
+        await recarregarFornecedores(resultado.id);
+        fecharModalNovoFornecedor();
+    } catch (err) {
+        alert('Erro ao cadastrar fornecedor: ' + err.message);
+    }
+});
 
 function opcoesProdutos() {
     return produtosExistentes.map(p =>
