@@ -45,11 +45,13 @@
                     <div style="padding:18px 20px;">
                         <div class="form-group full">
                             <label>Fornecedor</label>
-                            <select id="fornecedor_id" required>
-                                <option value="">Selecione um fornecedor...</option>
-                            </select>
+                            <div style="display:flex; gap:8px;">
+                                <select id="fornecedor_id" required style="flex:1;">
+                                    <option value="">Selecione um fornecedor...</option>
+                                </select>
+                                <button type="button" class="btn btn-secondary" onclick="abrirModalNovoFornecedor()" style="white-space:nowrap;">+ Novo</button>
+                            </div>
                         </div>
-                        <a href="fornecedores.html" style="font-size:12.5px; color:var(--text-muted);">+ Cadastrar novo fornecedor</a>
                     </div>
                 </div>
 
@@ -90,6 +92,38 @@
                 </div>
             </form>
         </div>
+    </div>
+</div>
+
+<!-- Popup de novo fornecedor, sem sair da tela de compra -->
+<div id="modal-novo-fornecedor" style="display:none; position:fixed; inset:0; background:rgba(18,23,43,0.45); align-items:center; justify-content:center; z-index:50;">
+    <div style="background:#fff; border-radius:8px; width:420px; padding:24px;">
+        <div class="flex-between" style="margin-bottom:18px;">
+            <h3 style="font-size:16px;">Novo fornecedor</h3>
+            <span style="cursor:pointer; color:#6B7080;" onclick="fecharModalNovoFornecedor()">✕</span>
+        </div>
+        <form id="form-novo-fornecedor">
+            <div class="form-group">
+                <label>Nome / Razão social</label>
+                <input type="text" id="nf-nome" required>
+            </div>
+            <div class="form-group">
+                <label>Telefone</label>
+                <input type="text" id="nf-telefone" placeholder="(00) 00000-0000">
+            </div>
+            <div class="form-group">
+                <label>CNPJ/CPF</label>
+                <input type="text" id="nf-cnpj">
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="nf-email">
+            </div>
+            <div class="flex-between mt-16">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalNovoFornecedor()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar e usar nesta compra</button>
+            </div>
+        </form>
     </div>
 </div>
 
