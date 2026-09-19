@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const path = require('path');
 require('dotenv').config();
 
 const db = require('./config/db');
@@ -21,7 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 // Serve o frontend (HTML/CSS/JS) diretamente pelo mesmo servidor
-app.use(express.static('../frontend'));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // Login não exige token (é ele quem gera o token)
 app.use('/api/auth', authRoutes);
