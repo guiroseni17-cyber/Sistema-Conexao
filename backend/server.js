@@ -22,7 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 // Serve o frontend (HTML/CSS/JS) diretamente pelo mesmo servidor
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+app.use(express.static(path.join(__dirname, 'frontend')));
 
 // Login não exige token (é ele quem gera o token)
 app.use('/api/auth', authRoutes);
