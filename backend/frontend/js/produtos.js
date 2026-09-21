@@ -28,7 +28,9 @@ async function carregarProdutos() {
                 <td><strong>${p.nome}</strong>${p.modelo ? `<div class="text-muted" style="font-size:12px;">${p.modelo}</div>` : ''}</td>
                 <td>${rotulosCategoria[p.categoria] || p.categoria}</td>
                 <td class="text-muted">${p.imei || '-'}</td>
-                <td>${p.origem === 'troca' ? '<span class="badge badge-green">Troca</span>' : '<span class="badge badge-gray">Compra</span>'}</td>
+                                <td>${p.origem === 'troca'
+                    ? `<span class="badge badge-green" title="Pedido #${p.troca_pedido_id}">${p.troca_cliente_nome ? 'De: ' + p.troca_cliente_nome : 'Troca'}${p.troca_pedido_id ? ' (#' + p.troca_pedido_id + ')' : ''}</span>`
+                    : '<span class="badge badge-gray">Compra</span>'}</td>
                 <td class="text-right">${p.quantidade <= p.estoque_minimo ? `<span class="badge ${p.quantidade === 0 ? 'badge-red' : 'badge-amber'}">${p.quantidade}</span>` : p.quantidade}</td>
                 <td class="text-right">${formatarMoeda(p.preco_venda)}</td>
                 <td class="text-right">
