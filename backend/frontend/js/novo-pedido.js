@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabela = document.querySelector("#tabelaProdutos tbody");
     document.getElementById("n_pedido").value = Math.floor(100 + Math.random() * 900);
 
-    // Simulação de produtos em estoque vindos da API / Base de dados
+    // Lista de estoque simulada (pode ser integrada à API de produtos posteriormente)
     const estoqueSimulado = [
         { nome: "iPhone 11 64gb", preco: 990.00 },
         { nome: "iPhone 13 128gb", preco: 2300.00 },
@@ -108,6 +108,50 @@ document.addEventListener("DOMContentLoaded", () => {
                 <input type="number" placeholder="Valor R$ (${i})" style="width: 120px;" step="0.01">
             `;
             containerParcelas.appendChild(div);
+        }
+    });
+
+    // GESTÃO DO MODAL DE CADASTRO DE CLIENTE
+    const btnCadastrarCliente = document.getElementById("btnCadastrarCliente");
+    const modalCliente = document.getElementById("modalCliente");
+    const btnFecharModalCliente = document.getElementById("btnFecharModalCliente");
+    const formCadastrarCliente = document.getElementById("formCadastrarCliente");
+
+    btnCadastrarCliente.addEventListener("click", (e) => {
+        e.preventDefault();
+        modalCliente.style.display = "flex";
+    });
+
+    btnFecharModalCliente.addEventListener("click", () => {
+        modalCliente.style.display = "none";
+    });
+
+    formCadastrarCliente.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById("novoClienteNome").value;
+        const telefone = document.getElementById("novoClienteTelefone").value;
+        const documento = document.getElementById("novoClienteDocumento").value;
+
+        try {
+            const resposta = await fetch('/api/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nome, phone: telefone, document: documento })
+            });
+
+            if (resposta.ok) {
+                alert("Cliente cadastrado com sucesso!");
+                document.getElementById("cliente").value = nome;
+                modalCliente.style.display = "none";
+                formCadastrarCliente.reset();
+            } else {
+                alert("Erro ao cadastrar cliente na API.");
+            }
+        } catch (erro) {
+            document.getElementById("cliente").value = nome;
+            modalCliente.style.display = "none";
+            alert("Cliente adicionado ao pedido localmente!");
+            formCadastrarCliente.reset();
         }
     });
 
