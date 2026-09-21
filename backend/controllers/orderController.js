@@ -1,5 +1,14 @@
 const db = require('../config/db');
 
+// Monta um texto curto tipo "Pix + Cartão de crédito 3x" a partir da lista
+// de formas de pagamento, só para exibição rápida nas listagens/relatórios.
+function resumoFormasPagamento(pagamentos) {
+    if (!pagamentos || pagamentos.length === 0) return null;
+    return pagamentos
+        .map(p => (p.parcelas && p.parcelas > 1) ? `${p.forma_pagamento} ${p.parcelas}x` : p.forma_pagamento)
+        .join(' + ');
+}
+
 // Listar pedidos (resumo, com nome do cliente e do vendedor)
 exports.listar = async (req, res) => {
     try {
@@ -43,7 +52,11 @@ exports.buscarPorId = async (req, res) => {
             WHERE pt.pedido_id = ?
         `, [pedidoId]);
 
-        res.json({ ...pedido[0], itens, trocas });
+        const [pagamentos] = await db.query(
+            'SELECT * FROM pedido_pagamentos WHERE pedido_id = ? ORDER BY id ASC', [pedidoId]
+        );
+
+        res.json({ ...pedido[0], itens, trocas, pagamentos });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao buscar pedido', detalhe: err.message });
     }
@@ -55,9 +68,12 @@ exports.buscarPorId = async (req, res) => {
  * Corpo esperado:
  * {
  *   cliente_id: 1,
- *   forma_pagamento: "Pix",
+ *   pagamentos: [
+ *     { forma_pagamento: "Pix", valor: 700, parcelas: 1 },
+ *     { forma_pagamento: "Cartão de crédito", valor: 800, parcelas: 3 }
+ *   ],
  *   itens: [ { produto_id: 5, quantidade: 1, preco_unitario: 1500 } ],
- *   troca: {   // opcional - aparelho recebido do cliente na troca
+ *   troca: {
  *     nome: "iPhone 11 128GB",
  *     categoria: "aparelho_seminovo",
  *     marca: "Apple",
@@ -69,23 +85,19 @@ exports.buscarPorId = async (req, res) => {
  *     observacoes: "Tela com micro-riscos"
  *   }
  * }
- *
- * Ao finalizar: dá baixa nos itens vendidos e, se houver troca,
- * cria automaticamente o produto recebido direto no estoque.
  */
 exports.criar = async (req, res) => {
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
 
-        const { cliente_id, forma_pagamento, itens, troca, observacoes } = req.body;
+        const { cliente_id, pagamentos, itens, troca, observacoes, data_pedido, agendado } = req.body;
 
         if (!cliente_id || !itens || itens.length === 0) {
             await connection.rollback();
             return res.status(400).json({ erro: 'Cliente e ao menos um item vendido são obrigatórios' });
         }
 
-        // 1. Calcula valor total dos itens vendidos
         let valorTotal = 0;
         for (const item of itens) {
             valorTotal += item.quantidade * item.preco_unitario;
@@ -93,17 +105,26 @@ exports.criar = async (req, res) => {
 
         const valorTroca = troca ? Number(troca.valor_abatido || 0) : 0;
         const valorAPagar = valorTotal - valorTroca;
+        const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
-        // 2. Cria o pedido (guarda quem da equipe fez a venda)
         const [pedidoResult] = await connection.query(
-            `INSERT INTO pedidos (cliente_id, usuario_id, forma_pagamento, valor_total, valor_troca, valor_a_pagar, observacoes)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [cliente_id, req.user?.id || null, forma_pagamento || null, valorTotal, valorTroca, valorAPagar, observacoes || null]
+            `INSERT INTO pedidos (cliente_id, usuario_id, status, forma_pagamento, valor_total, valor_troca, valor_a_pagar, observacoes${data_pedido ? ', criado_em' : ''})
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?${data_pedido ? ', ?' : ''})`,
+            data_pedido
+                ? [cliente_id, req.user?.id || null, agendado ? 'aberto' : 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null, data_pedido]
+                : [cliente_id, req.user?.id || null, 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null]
         );
         const pedidoId = pedidoResult.insertId;
 
-        // 3. Registra os itens vendidos, dá baixa no estoque e grava o
-        //    histórico de movimentação (saída por venda)
+        if (pagamentos && pagamentos.length > 0) {
+            for (const p of pagamentos) {
+                await connection.query(
+                    'INSERT INTO pedido_pagamentos (pedido_id, forma_pagamento, parcelas, valor) VALUES (?, ?, ?, ?)',
+                    [pedidoId, p.forma_pagamento, p.parcelas || 1, p.valor || 0]
+                );
+            }
+        }
+
         for (const item of itens) {
             const [produtoRows] = await connection.query(
                 'SELECT quantidade FROM produtos WHERE id = ? FOR UPDATE',
@@ -133,8 +154,6 @@ exports.criar = async (req, res) => {
             );
         }
 
-        // 4. Se houve troca, cria automaticamente o produto recebido no estoque
-        //    (esta é a funcionalidade principal solicitada: entrada automática do aparelho trocado)
         if (troca && troca.nome) {
             const [produtoTrocaResult] = await connection.query(
                 `INSERT INTO produtos
@@ -147,8 +166,8 @@ exports.criar = async (req, res) => {
                     troca.modelo || null,
                     troca.imei || null,
                     troca.condicao || 'seminovo_bom',
-                    troca.valor_abatido || 0,          // preco_custo = valor que foi abatido na troca
-                    troca.preco_venda_sugerido || 0,   // preco_venda sugerido para revenda
+                    troca.valor_abatido || 0,
+                    troca.preco_venda_sugerido || 0,
                     troca.observacoes || null
                 ]
             );
@@ -171,9 +190,8 @@ exports.criar = async (req, res) => {
             valor_total: valorTotal,
             valor_troca: valorTroca,
             valor_a_pagar: valorAPagar,
-            mensagem: troca && troca.nome
-                ? 'Pedido criado. Aparelho recebido em troca já cadastrado no estoque.'
-                : 'Pedido criado com sucesso.'
+            mensagem: (agendado ? 'Pedido agendado com sucesso. ' : 'Pedido criado com sucesso. ') +
+                (troca && troca.nome ? 'Aparelho recebido em troca já cadastrado no estoque.' : '')
         });
 
     } catch (err) {
@@ -185,13 +203,9 @@ exports.criar = async (req, res) => {
 };
 
 /**
- * Editar pedido (cliente, forma de pagamento, observações e itens vendidos).
+ * Editar pedido (cliente, formas de pagamento, observações e itens vendidos).
  * Reverte o estoque dos itens antigos e aplica o estoque dos itens novos,
  * tudo dentro de uma transação para não deixar o estoque inconsistente.
- *
- * Não mexe na troca (o aparelho recebido já virou um produto normal do
- * estoque - para corrigir os dados dele, edite em Estoque). É possível
- * apenas ajustar o valor abatido na troca (valor_troca) deste pedido.
  */
 exports.editar = async (req, res) => {
     const connection = await db.getConnection();
@@ -211,13 +225,12 @@ exports.editar = async (req, res) => {
             return res.status(400).json({ erro: 'Pedido cancelado não pode ser editado' });
         }
 
-        const { cliente_id, forma_pagamento, observacoes, itens, valor_troca } = req.body;
+        const { cliente_id, pagamentos, observacoes, itens, valor_troca } = req.body;
         if (!cliente_id || !itens || itens.length === 0) {
             await connection.rollback();
             return res.status(400).json({ erro: 'Cliente e ao menos um item vendido são obrigatórios' });
         }
 
-        // 1. Devolve ao estoque a quantidade dos itens que estavam no pedido
         const [itensAtuais] = await connection.query(
             'SELECT produto_id, quantidade FROM pedido_itens WHERE pedido_id = ?', [pedidoId]
         );
@@ -229,7 +242,6 @@ exports.editar = async (req, res) => {
         }
         await connection.query('DELETE FROM pedido_itens WHERE pedido_id = ?', [pedidoId]);
 
-        // 2. Aplica os itens novos, validando estoque disponível
         let valorTotal = 0;
         for (const item of itens) {
             const [produtoRows] = await connection.query(
@@ -256,12 +268,23 @@ exports.editar = async (req, res) => {
 
         const valorTrocaFinal = Number(valor_troca || 0);
         const valorAPagar = valorTotal - valorTrocaFinal;
+        const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
         await connection.query(
             `UPDATE pedidos SET cliente_id=?, forma_pagamento=?, observacoes=?, valor_total=?, valor_troca=?, valor_a_pagar=?
              WHERE id=?`,
-            [cliente_id, forma_pagamento || null, observacoes || null, valorTotal, valorTrocaFinal, valorAPagar, pedidoId]
+            [cliente_id, formaPagamentoResumo, observacoes || null, valorTotal, valorTrocaFinal, valorAPagar, pedidoId]
         );
+
+        await connection.query('DELETE FROM pedido_pagamentos WHERE pedido_id = ?', [pedidoId]);
+        if (pagamentos && pagamentos.length > 0) {
+            for (const p of pagamentos) {
+                await connection.query(
+                    'INSERT INTO pedido_pagamentos (pedido_id, forma_pagamento, parcelas, valor) VALUES (?, ?, ?, ?)',
+                    [pedidoId, p.forma_pagamento, p.parcelas || 1, p.valor || 0]
+                );
+            }
+        }
 
         await connection.commit();
         res.json({
@@ -279,8 +302,6 @@ exports.editar = async (req, res) => {
 };
 
 // Cancelar pedido - estorna ao estoque os itens vendidos.
-// O aparelho recebido em troca (se houver) NÃO é removido automaticamente do
-// estoque, pois ele já pode ter sido movimentado separadamente; confira manualmente.
 exports.cancelar = async (req, res) => {
     const connection = await db.getConnection();
     try {
