@@ -1,179 +1,131 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FoneNinja - Novo Pedido</title>
-<link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Pedido - Sistema</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2, h3 { color: #1f4e79; border-bottom: 2px solid #eaeaea; padding-bottom: 8px; margin-top: 25px; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
+        .form-group label { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background-color: #f8f9fa; color: #333; }
+        .btn-add { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add:hover { background-color: #218838; }
+        .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; }
+    </style>
 </head>
 <body>
-<div class="app">
 
-    <aside class="sidebar">
-        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
-        <div class="nav-section-label">Principal</div>
-        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
-        <a href="pedidos.html" class="nav-item active"><span class="icon">🧾</span> Pedidos de venda</a>
-        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
-        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
-        <div class="nav-section-label">Cadastros</div>
-        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
-        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
-        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
-        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
-        <div class="sidebar-footer">
-            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
-            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
-            <a href="#" class="sair-link" onclick="logout()">Sair</a>
-        </div>
-    </aside>
+<div class="container">
+    <h2>Dados do Pedido</h2>
 
-    <div class="main">
-        <div class="topbar">
-            <div>
-                <div class="page-title" id="titulo-pagina">Novo pedido de venda</div>
-                <div class="page-subtitle" id="subtitulo-pagina">Se houver troca, o aparelho recebido entra automaticamente no estoque</div>
+    <form id="formNovoPedido">
+        <!-- Linha 1: Cliente, Vendedor, N° Pedido -->
+        <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+                <label for="cliente">Cliente</label>
+                <input type="text" id="cliente" placeholder="Pesquisar cliente..." required>
             </div>
-            <a href="pedidos.html" class="btn btn-secondary">Voltar</a>
+            <div class="form-group">
+                <label for="vendedor">Vendedor</label>
+                <input type="text" id="vendedor" placeholder="Nome do vendedor">
+            </div>
+            <div class="form-group">
+                <label for="n_pedido">N° Pedido</label>
+                <input type="text" id="n_pedido" readonly style="background-color: #e9ecef;">
+            </div>
         </div>
 
-        <div class="content" style="max-width: 900px;">
-            <form id="form-pedido">
-
-                <!-- Cliente -->
-                <div class="panel" style="margin-bottom:16px;">
-                    <div class="panel-header"><h3>1. Cliente</h3></div>
-                    <div style="padding:18px 20px;">
-                        <div class="form-group full">
-                            <label>Cliente</label>
-                            <select id="cliente_id" required>
-                                <option value="">Selecione um cliente...</option>
-                            </select>
-                        </div>
-                        <a href="clientes.html" style="font-size:12.5px; color:var(--text-muted);">+ Cadastrar novo cliente</a>
-                    </div>
-                </div>
-
-                <!-- Itens vendidos -->
-                <div class="panel" style="margin-bottom:16px;">
-                    <div class="panel-header">
-                        <h3>2. Itens vendidos (saída do estoque)</h3>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="adicionarItem()">+ Adicionar item</button>
-                    </div>
-                    <div style="padding:18px 20px;" id="itens-container"></div>
-                </div>
-
-                <!-- Troca -->
-                <div class="panel" style="margin-bottom:16px;">
-                    <div class="panel-header"><h3>3. Troca de aparelho (opcional)</h3></div>
-                    <div style="padding:18px 20px;">
-
-                        <!-- Mostrado só ao editar um pedido que já teve troca: o aparelho já está no
-                             estoque, então aqui só dá pra ajustar o valor abatido. Para corrigir os
-                             dados do aparelho em si (nome, condição, preço...), edite em Estoque. -->
-                        <div id="troca-existente" style="display:none;">
-                            <p class="text-muted" style="font-size:12.5px; margin-bottom:10px;">
-                                Este pedido já tem um aparelho recebido em troca (cadastrado no estoque).
-                                Para editar os dados do aparelho, acesse <a href="produtos.html">Estoque</a>.
-                                Aqui você só pode ajustar o valor abatido.
-                            </p>
-                            <div class="form-group" style="max-width:260px;">
-                                <label>Valor abatido no pedido (R$)</label>
-                                <input type="number" id="t-valor-existente" step="0.01" value="0">
-                            </div>
-                        </div>
-
-                        <div class="trade-box" id="trade-box">
-                            <label class="trade-toggle">
-                                <input type="checkbox" id="tem-troca" onchange="toggleTroca()">
-                                O cliente deu um aparelho na troca
-                            </label>
-                            <div class="trade-fields" id="trade-fields">
-                                <p class="text-muted" style="font-size:12.5px; margin-bottom:14px;">
-                                    Preencha os dados do aparelho recebido — ele será cadastrado automaticamente no estoque ao finalizar o pedido.
-                                </p>
-                                <div class="form-grid">
-                                    <div class="form-group full">
-                                        <label>Nome do aparelho recebido</label>
-                                        <input type="text" id="t-nome" placeholder="Ex: iPhone 11 128GB">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Marca</label>
-                                        <input type="text" id="t-marca">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Modelo</label>
-                                        <input type="text" id="t-modelo">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>IMEI</label>
-                                        <input type="text" id="t-imei">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Condição</label>
-                                        <select id="t-condicao">
-                                            <option value="seminovo_excelente">Seminovo - Excelente</option>
-                                            <option value="seminovo_bom" selected>Seminovo - Bom</option>
-                                            <option value="seminovo_regular">Seminovo - Regular</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Valor abatido no pedido (R$)</label>
-                                        <input type="number" id="t-valor-abatido" step="0.01" value="0">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Preço sugerido p/ revenda (R$)</label>
-                                        <input type="number" id="t-preco-venda" step="0.01" value="0">
-                                    </div>
-                                    <div class="form-group full">
-                                        <label>Observações (estado do aparelho)</label>
-                                        <textarea id="t-obs" placeholder="Ex: tela com micro-riscos, bateria 89%..."></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pagamento e resumo -->
-                <div class="panel" style="margin-bottom:16px;">
-                    <div class="panel-header"><h3>4. Pagamento</h3></div>
-                    <div style="padding:18px 20px;">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Forma de pagamento</label>
-                                <select id="forma_pagamento">
-                                    <option>Pix</option>
-                                    <option>Dinheiro</option>
-                                    <option>Cartão de débito</option>
-                                    <option>Cartão de crédito</option>
-                                    <option>Cartão de crédito parcelado</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Observações do pedido</label>
-                                <input type="text" id="observacoes">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="summary-box mt-16">
-                    <div class="summary-row"><span>Subtotal itens vendidos</span><span id="resumo-subtotal">R$ 0,00</span></div>
-                    <div class="summary-row discount" id="linha-troca" style="display:none;"><span>Valor abatido na troca</span><span id="resumo-troca">- R$ 0,00</span></div>
-                    <div class="summary-row total"><span>Total a receber</span><span id="resumo-final">R$ 0,00</span></div>
-                </div>
-
-                <div class="flex-between mt-16" style="margin-bottom:40px;">
-                    <a href="pedidos.html" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary">Finalizar pedido</button>
-                </div>
-            </form>
+        <h3>Produtos</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Atribuir para a mesma localização</label>
+                <select><option>Sim</option><option>Não</option></select>
+            </div>
+            <div class="form-group">
+                <label>Escolha a localização</label>
+                <select><option>Geral - Geral</option></select>
+            </div>
         </div>
-    </div>
+
+        <!-- Tabela de Produtos -->
+        <table id="tabelaProdutos">
+            <thead>
+                <tr>
+                    <th style="width: 40%;">Produto / Código</th>
+                    <th style="width: 10%;">Qtde.</th>
+                    <th style="width: 12%;">Valor unit. (R$)</th>
+                    <th style="width: 15%;">Valor total (R$)</th>
+                    <th style="width: 10%;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" class="prod-nome" placeholder="Digite o produto..." style="width: 95%;"></td>
+                    <td><input type="number" class="prod-qtd" value="1" min="1" style="width: 80%;"></td>
+                    <td><input type="number" class="prod-unit" step="0.01" value="0.00" style="width: 90%;"></td>
+                    <td><input type="text" class="prod-total" readonly value="0,00" style="background-color: #e9ecef; width: 90%;"></td>
+                    <td><button type="button" class="btn-remover" style="background:none; border:none; cursor:pointer; color:red; font-size:16px;">🗑️</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" id="btnAddProduto" class="btn-add" style="font-size: 12px; padding: 6px 12px; margin-bottom: 20px;">+ Adicionar outro produto</button>
+
+        <h3>Totais do Pedido</h3>
+        <div class="totals-grid">
+            <div class="form-group"><label>Valor dos produtos</label><input type="text" id="totalProdutos" value="0,00" readonly></div>
+            <div class="form-group"><label>Valor do IPI</label><input type="text" id="totalIpi" value="0,00"></div>
+            <div class="form-group"><label>Valor do frete</label><input type="text" id="totalFrete" value="0,00"></div>
+            <div class="form-group"><label>Valor do desconto</label><input type="text" id="totalDesconto" value="0,00"></div>
+            <div class="form-group"><label>Total Geral</label><input type="text" id="totalGeral" value="0,00" readonly style="font-weight:bold; color:#007bff;"></div>
+        </div>
+
+        <h3>Pagamento e Transporte</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Condição de pagamento</label>
+                <select id="condicaoPagamento">
+                    <option value="">Selecione...</option>
+                    <option value="avista">À Vista</option>
+                    <option value="credito">Cartão de Crédito</option>
+                    <option value="boleto">Boleto Bancário</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Quantidade de parcelas</label>
+                <input type="number" id="qtdParcelas" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label>Modalidade de frete</label>
+                <select id="modalidadeFrete"><option>Remetente (CIF)</option><option>Destinatário (FOB)</option></select>
+            </div>
+        </div>
+
+        <h3>Observações</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Observações (impressas na nota)</label>
+                <textarea rows="3" placeholder="Informação visível para o cliente..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Observações internas</label>
+                <textarea rows="3" placeholder="Apenas para uso interno da loja..."></textarea>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; text-align: right;">
+            <button type="submit" class="btn-add" style="padding: 12px 25px; font-size: 16px;">Salvar Pedido</button>
+        </div>
+    </form>
 </div>
 
-<script src="js/api.js"></script>
 <script src="js/novo-pedido.js"></script>
 </body>
 </html>
