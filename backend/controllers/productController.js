@@ -4,18 +4,25 @@ const db = require('../config/db');
 exports.listar = async (req, res) => {
     try {
         const { busca, categoria } = req.query;
-        let sql = 'SELECT * FROM produtos WHERE ativo = TRUE';
+        let sql = `
+            SELECT p.*, pt.pedido_id AS troca_pedido_id, c.nome AS troca_cliente_nome
+            FROM produtos p
+            LEFT JOIN pedido_trocas pt ON pt.produto_id = p.id
+            LEFT JOIN pedidos ped ON ped.id = pt.pedido_id
+            LEFT JOIN clientes c ON c.id = ped.cliente_id
+            WHERE p.ativo = TRUE
+        `;
         const params = [];
 
         if (busca) {
-            sql += ' AND (nome LIKE ? OR modelo LIKE ? OR imei LIKE ?)';
+            sql += ' AND (p.nome LIKE ? OR p.modelo LIKE ? OR p.imei LIKE ?)';
             params.push(`%${busca}%`, `%${busca}%`, `%${busca}%`);
         }
         if (categoria) {
-            sql += ' AND categoria = ?';
+            sql += ' AND p.categoria = ?';
             params.push(categoria);
         }
-        sql += ' ORDER BY criado_em DESC';
+        sql += ' ORDER BY p.criado_em DESC';
 
         const [rows] = await db.query(sql, params);
         res.json(rows);
