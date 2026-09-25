@@ -2,15 +2,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabela = document.querySelector("#tabelaProdutos tbody");
     document.getElementById("n_pedido").value = Math.floor(100 + Math.random() * 900);
 
-    // Lista de estoque simulada (pode ser integrada à API de produtos posteriormente)
-    const estoqueSimulado = [
-        { nome: "iPhone 11 64gb", preco: 990.00 },
-        { nome: "iPhone 13 128gb", preco: 2300.00 },
-        { nome: "Fonte Original 20W", preco: 80.00 },
-        { nome: "Película Blindagem Lacrados", preco: 300.00 },
-        { nome: "Película Blindagem 17 Pro Max", preco: 200.00 },
-        { nome: "Película Blindagem Seminovos", preco: 350.00 }
-    ];
+    let produtosEstoque = []; // vem da API real (/api/produtos)
+    async function carregarEstoque() {
+        try {
+            produtosEstoque = await api.produtos.listar('?busca=');
+        } catch (err) {
+            console.error('Erro ao carregar estoque:', err);
+            alert('Não foi possível carregar o estoque. Recarregue a página.');
+        }
+    }
 
     function calcularTotais() {
         let somaProdutos = 0;
@@ -35,7 +35,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const boxSugestoes = linha.querySelector(".sugestoes-box");
         const inputUnit = linha.querySelector(".prod-unit");
 
+        linha.dataset.produtoId = ""; // só fica preenchido quando um produto real é escolhido na lista
+
         inputBusca.addEventListener("input", () => {
+            linha.dataset.produtoId = "";
             const termo = inputBusca.value.toLowerCase();
             boxSugestoes.innerHTML = "";
             if (termo.length === 0) {
@@ -43,16 +46,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const filtrados = estoqueSimulado.filter(p => p.nome.toLowerCase().includes(termo));
+            const filtrados = produtosEstoque.filter(p =>
+                p.nome.toLowerCase().includes(termo) ||
+                (p.modelo && p.modelo.toLowerCase().includes(termo))
+            );
             if (filtrados.length > 0) {
                 boxSugestoes.style.display = "block";
                 filtrados.forEach(prod => {
                     const item = document.createElement("div");
                     item.className = "sugestao-item";
-                    item.textContent = `${prod.nome} - R$ ${prod.preco.toFixed(2)}`;
+                    const rotuloModelo = prod.modelo ? ` - ${prod.modelo}` : '';
+                    item.textContent = `${prod.nome}${rotuloModelo} — R$ ${Number(prod.preco_venda).toFixed(2)} (estoque: ${prod.quantidade})`;
                     item.addEventListener("click", () => {
-                        inputBusca.value = prod.nome;
-                        inputUnit.value = prod.preco.toFixed(2);
+                        inputBusca.value = `${prod.nome}${rotuloModelo}`;
+                        inputUnit.value = Number(prod.preco_venda).toFixed(2);
+                        linha.dataset.produtoId = prod.id;
                         boxSugestoes.style.display = "none";
                         calcularTotais();
                     });
@@ -102,10 +110,16 @@ document.addEventListener("DOMContentLoaded", () => {
         containerParcelas.innerHTML = "";
         for (let i = 1; i <= qtd; i++) {
             const div = document.createElement("div");
+            div.className = "linha-pagamento";
             div.style.cssText = "display: flex; gap: 10px;";
             div.innerHTML = `
-                <select style="flex: 1;"><option>Dinheiro</option><option>Pix</option><option>Cartão Crédito (${i}ª Parcela)</option><option>Cartão Débito</option></select>
-                <input type="number" placeholder="Valor R$ (${i})" style="width: 120px;" step="0.01">
+                <select class="pag-forma" style="flex: 1;">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Cartão de crédito">Cartão de crédito</option>
+                    <option value="Cartão de débito">Cartão de débito</option>
+                </select>
+                <input type="number" class="pag-valor" placeholder="Valor R$ (${i})" style="width: 120px;" step="0.01">
             `;
             containerParcelas.appendChild(div);
         }
@@ -117,6 +131,51 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnFecharModalTopo = document.getElementById("btnFecharModalTopo");
     const btnCancelarModal = document.getElementById("btnCancelarModal");
     const formCadastrarCliente = document.getElementById("formCadastrarCliente");
+    const inputCliente = document.getElementById("cliente");
+    const inputClienteId = document.getElementById("clienteId");
+    const boxSugestoesCliente = document.getElementById("clienteSugestoes");
+
+    // Busca cliente já cadastrado, de verdade, via /api/clientes
+    let debounceCliente = null;
+    inputCliente.addEventListener("input", () => {
+        inputClienteId.value = "";
+        const termo = inputCliente.value.trim();
+        clearTimeout(debounceCliente);
+        if (termo.length < 2) {
+            boxSugestoesCliente.style.display = "none";
+            return;
+        }
+        debounceCliente = setTimeout(async () => {
+            try {
+                const encontrados = await api.clientes.listar(`?busca=${encodeURIComponent(termo)}`);
+                boxSugestoesCliente.innerHTML = "";
+                if (encontrados.length === 0) {
+                    boxSugestoesCliente.style.display = "none";
+                    return;
+                }
+                boxSugestoesCliente.style.display = "block";
+                encontrados.forEach(cli => {
+                    const item = document.createElement("div");
+                    item.className = "sugestao-item";
+                    item.textContent = cli.telefone ? `${cli.nome} — ${cli.telefone}` : cli.nome;
+                    item.addEventListener("click", () => {
+                        inputCliente.value = cli.nome;
+                        inputClienteId.value = cli.id;
+                        boxSugestoesCliente.style.display = "none";
+                    });
+                    boxSugestoesCliente.appendChild(item);
+                });
+            } catch (err) {
+                console.error('Erro ao buscar clientes:', err);
+            }
+        }, 300);
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!inputCliente.contains(e.target) && !boxSugestoesCliente.contains(e.target)) {
+            boxSugestoesCliente.style.display = "none";
+        }
+    });
 
     btnCadastrarCliente.addEventListener("click", (e) => {
         e.preventDefault();
@@ -135,40 +194,90 @@ document.addEventListener("DOMContentLoaded", () => {
     formCadastrarCliente.addEventListener("submit", async (e) => {
         e.preventDefault();
         const nome = document.getElementById("cliNome").value;
-        const celular = document.getElementById("cliCelular").value;
+        const telefone = document.getElementById("cliCelular").value || document.getElementById("cliTelefone").value;
         const cpfCnpj = document.getElementById("cliCpfCnpj").value;
+        const email = document.getElementById("cliEmail").value;
+        const partesEndereco = [
+            document.getElementById("cliEndereco").value,
+            document.getElementById("cliNumero").value,
+            document.getElementById("cliBairro").value,
+            document.getElementById("cliCidade").value,
+            document.getElementById("cliEstado").value,
+            document.getElementById("cliCep").value
+        ].filter(Boolean);
 
         try {
-            const resposta = await fetch('/api/clients', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    name: nome, 
-                    phone: celular || document.getElementById("cliTelefone").value, 
-                    document: cpfCnpj 
-                })
+            const resultado = await api.clientes.criar({
+                nome, telefone, cpf_cnpj: cpfCnpj, email,
+                endereco: partesEndereco.join(', ')
             });
-
-            if (resposta.ok) {
-                alert("Cliente cadastrado com sucesso!");
-                document.getElementById("cliente").value = nome;
-                modalCliente.style.display = "none";
-                formCadastrarCliente.reset();
-            } else {
-                // Fallback inteligente se a API do backend recusar campos extras
-                document.getElementById("cliente").value = nome;
-                modalCliente.style.display = "none";
-                alert("Cliente salvo e selecionado para o pedido!");
-            }
-        } catch (erro) {
-            document.getElementById("cliente").value = nome;
+            inputCliente.value = nome;
+            inputClienteId.value = resultado.id;
             modalCliente.style.display = "none";
-            alert("Cliente adicionado ao pedido com sucesso!");
             formCadastrarCliente.reset();
+            alert("Cliente cadastrado com sucesso!");
+        } catch (erro) {
+            alert("Erro ao cadastrar cliente: " + erro.message);
         }
     });
 
     ["totalFrete", "totalDesconto"].forEach(id => {
         document.getElementById(id).addEventListener("input", calcularTotais);
     });
+
+    // ENVIO DO PEDIDO — isso que faltava por completo
+    document.getElementById("formNovoPedido").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        if (!inputClienteId.value) {
+            alert('Selecione um cliente da lista de sugestões ou cadastre um novo em "+ Cadastrar novo cliente".');
+            inputCliente.focus();
+            return;
+        }
+
+        const linhas = Array.from(document.querySelectorAll("#tabelaProdutos tbody tr"));
+        const itens = [];
+        for (const linha of linhas) {
+            const produtoId = linha.dataset.produtoId;
+            const quantidade = Number(linha.querySelector(".prod-qtd").value) || 0;
+            const precoUnitario = Number(linha.querySelector(".prod-unit").value) || 0;
+            if (!produtoId) {
+                alert('Selecione o produto de cada linha a partir da lista de sugestões do estoque.');
+                return;
+            }
+            if (quantidade <= 0) {
+                alert('Informe uma quantidade válida para todos os produtos.');
+                return;
+            }
+            itens.push({ produto_id: Number(produtoId), quantidade, preco_unitario: precoUnitario });
+        }
+
+        const pagamentos = Array.from(document.querySelectorAll(".linha-pagamento")).map(linha => ({
+            forma_pagamento: linha.querySelector(".pag-forma").value,
+            parcelas: 1,
+            valor: Number(linha.querySelector(".pag-valor").value) || 0
+        })).filter(p => p.valor > 0);
+
+        const frete = parseFloat(document.getElementById("totalFrete").value) || 0;
+        const desconto = parseFloat(document.getElementById("totalDesconto").value) || 0;
+        const textareas = document.querySelectorAll('textarea');
+        let observacoes = textareas[0] ? textareas[0].value : '';
+        if (frete > 0) observacoes += `\nFrete: R$ ${frete.toFixed(2)}`;
+        if (desconto > 0) observacoes += `\nDesconto: R$ ${desconto.toFixed(2)}`;
+
+        try {
+            const resultado = await api.pedidos.criar({
+                cliente_id: Number(inputClienteId.value),
+                itens,
+                pagamentos,
+                observacoes: observacoes.trim() || null
+            });
+            alert(resultado.mensagem);
+            window.location.href = 'pedidos.html';
+        } catch (err) {
+            alert('Erro ao salvar pedido: ' + err.message);
+        }
+    });
+
+    carregarEstoque();
 });
