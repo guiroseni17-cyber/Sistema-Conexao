@@ -180,11 +180,43 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCadastrarCliente.addEventListener("click", (e) => {
         e.preventDefault();
         modalCliente.style.display = "flex";
+        document.addEventListener("keydown", prenderFocoModal);
+        document.getElementById("cliTipoPessoa").focus();
     });
 
-    const fecharModal = () => { modalCliente.style.display = "none"; };
+    const fecharModal = () => {
+        modalCliente.style.display = "none";
+        document.removeEventListener("keydown", prenderFocoModal);
+    };
     btnFecharModalTopo.addEventListener("click", fecharModal);
     btnCancelarModal.addEventListener("click", fecharModal);
+
+    // Trava o Tab dentro do modal (o foco não escapa mais pra página de trás)
+    // e fecha o modal com Esc.
+    function prenderFocoModal(e) {
+        if (e.key === "Escape") {
+            fecharModal();
+            return;
+        }
+        if (e.key !== "Tab") return;
+
+        const focaveis = modalCliente.querySelectorAll(
+            'input:not([type=hidden]), select, textarea, button, a[href]'
+        );
+        const lista = Array.from(focaveis).filter(el => !el.disabled && el.offsetParent !== null);
+        if (lista.length === 0) return;
+
+        const primeiro = lista[0];
+        const ultimo = lista[lista.length - 1];
+
+        if (e.shiftKey && document.activeElement === primeiro) {
+            e.preventDefault();
+            ultimo.focus();
+        } else if (!e.shiftKey && document.activeElement === ultimo) {
+            e.preventDefault();
+            primeiro.focus();
+        }
+    }
 
     // Alternar rótulo CPF/CNPJ conforme tipo de pessoa
     document.getElementById("cliTipoPessoa").addEventListener("change", (e) => {
