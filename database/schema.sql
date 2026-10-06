@@ -163,6 +163,7 @@ CREATE INDEX idx_produtos_imei ON produtos(imei);
 CREATE INDEX idx_pedidos_cliente ON pedidos(cliente_id);
 CREATE INDEX idx_compras_fornecedor ON compras(fornecedor_id);
 CREATE INDEX idx_movimentos_produto ON estoque_movimentos(produto_id);
+CREATE INDEX idx_pagamentos_pedido ON pedido_pagamentos(pedido_id);
 
 -- ---------------------------------------------
 -- Migração para quem já tinha o banco antigo instalado:
