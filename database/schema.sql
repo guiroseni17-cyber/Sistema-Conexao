@@ -170,3 +170,17 @@ CREATE INDEX idx_movimentos_produto ON estoque_movimentos(produto_id);
 -- ---------------------------------------------
 -- ALTER TABLE produtos ADD COLUMN estoque_minimo INT NOT NULL DEFAULT 2;
 -- ALTER TABLE pedidos ADD COLUMN usuario_id INT, ADD FOREIGN KEY (usuario_id) REFERENCES usuarios(id);
+
+
+-- ---------------------------------------------
+-- Formas de pagamento do pedido (permite pagamento dividido,
+-- ex: parte no Pix + parte no cartão em 3x)
+-- ---------------------------------------------
+CREATE TABLE pedido_pagamentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pedido_id INT NOT NULL,
+    forma_pagamento VARCHAR(50) NOT NULL,
+    parcelas INT NOT NULL DEFAULT 1,
+    valor DECIMAL(10,2) NOT NULL DEFAULT 0,
+    FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
+);
