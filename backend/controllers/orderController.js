@@ -31,7 +31,9 @@ exports.buscarPorId = async (req, res) => {
         const pedidoId = req.params.id;
 
         const [pedido] = await db.query(`
-            SELECT p.*, c.nome AS cliente_nome, c.telefone AS cliente_telefone, u.nome AS vendedor_nome
+            SELECT p.*, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
+                   c.cpf_cnpj AS cliente_cpf_cnpj, c.email AS cliente_email,
+                   c.endereco AS cliente_endereco, u.nome AS vendedor_nome
             FROM pedidos p
             JOIN clientes c ON c.id = p.cliente_id
             LEFT JOIN usuarios u ON u.id = p.usuario_id
@@ -41,7 +43,7 @@ exports.buscarPorId = async (req, res) => {
         if (pedido.length === 0) return res.status(404).json({ erro: 'Pedido não encontrado' });
 
         const [itens] = await db.query(`
-            SELECT pi.*, pr.nome AS produto_nome, pr.modelo
+            SELECT pi.*, pr.nome AS produto_nome, pr.modelo, pr.imei
             FROM pedido_itens pi JOIN produtos pr ON pr.id = pi.produto_id
             WHERE pi.pedido_id = ?
         `, [pedidoId]);
