@@ -74,6 +74,7 @@ const api = {
     },
     pedidos: {
         listar: () => apiRequest('/pedidos'),
+        proximoNumero: () => apiRequest('/pedidos/proximo-numero'),
         buscar: (id) => apiRequest(`/pedidos/${id}`),
         criar: (dados) => apiRequest('/pedidos', { method: 'POST', body: JSON.stringify(dados) }),
         editar: (id, dados) => apiRequest(`/pedidos/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
