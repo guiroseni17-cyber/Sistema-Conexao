@@ -47,6 +47,24 @@ CREATE TABLE fornecedores (
 );
 
 -- ---------------------------------------------
+-- Modelos base (catálogo de variações)
+-- NÃO são estoque: só guardam nome/categoria/preço sugerido.
+-- O produto real só nasce em "produtos" quando uma Compra
+-- dá entrada nesse modelo com valor de custo.
+-- ---------------------------------------------
+CREATE TABLE modelos_base (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    categoria ENUM('aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca') NOT NULL DEFAULT 'aparelho_novo',
+    condicao ENUM('novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular') DEFAULT 'novo',
+    marca VARCHAR(60),
+    modelo VARCHAR(100),
+    preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
+    ativo BOOLEAN DEFAULT TRUE,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ---------------------------------------------
 -- Produtos / Estoque
 -- Cobre aparelhos novos, seminovos (recebidos em troca) e acessórios
 -- ---------------------------------------------
@@ -63,6 +81,7 @@ CREATE TABLE produtos (
     preco_custo DECIMAL(10,2) DEFAULT 0,
     preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
     origem ENUM('compra', 'troca') NOT NULL DEFAULT 'compra',
+    modelo_base_id INT NULL, -- de qual modelo base (variação) esse produto nasceu, se for o caso
     observacoes TEXT,
     ativo BOOLEAN DEFAULT TRUE,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
