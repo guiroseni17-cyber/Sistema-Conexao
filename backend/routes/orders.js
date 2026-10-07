@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require('../controllers/orderController');
 
 router.get('/dashboard', controller.dashboard);
+router.get('/proximo-numero', controller.proximoNumero);
 router.get('/', controller.listar);
 router.get('/:id', controller.buscarPorId);
 router.post('/', controller.criar);
