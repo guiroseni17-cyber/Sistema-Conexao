@@ -6,44 +6,60 @@
     <title>Novo Pedido - Sistema da Loja</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h2, h3 { color: #1f4e79; border-bottom: 2px solid #eaeaea; padding-bottom: 8px; margin-top: 25px; }
-        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
-        .form-group { flex: 1; min-width: 220px; display: flex; flex-direction: column; position: relative; }
-        .form-group label { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
-        .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
-        th { background-color: #f8f9fa; color: #333; }
-        .btn-acao { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-acao:hover { background-color: #218838; }
-        .sugestoes-box { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; z-index: 100; max-height: 150px; overflow-y: auto; display: none; }
-        .sugestao-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
-        .sugestao-item:hover { background-color: #f1f1f1; }
-        .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; }
-        .btn-upgrade { background: #fff; border: 2px dashed #1f4e79; color: #1f4e79; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-upgrade:hover { background: #eef5fc; }
-        .upgrade-card { border: 1px solid #cfe0f1; background: #f5f9fd; border-radius: 10px; padding: 16px 18px; margin-top: 10px; }
+        /* ===== Página de venda: visual do sistema (navy + vermelho) ===== */
+        .venda { max-width: 1100px; }
+        .container { background: transparent; padding: 0; }
+        .secao { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; margin-bottom: 16px; }
+        .secao h3 { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--navy); border: 0; padding: 0; margin: 0 0 16px; }
+        .secao h3::before { content: ""; width: 4px; height: 18px; background: var(--accent); border-radius: 2px; }
+        .form-row { display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+        .form-row:last-child { margin-bottom: 0; }
+        .form-group { flex: 1; min-width: 200px; display: flex; flex-direction: column; position: relative; }
+        .form-group label { font-size: 12px; font-weight: 600; letter-spacing: .2px; margin-bottom: 6px; color: var(--text-muted); }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: #fff; color: var(--text); transition: border-color .15s, box-shadow .15s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus, .up-busca:focus { outline: none; border-color: var(--navy-light); box-shadow: 0 0 0 3px rgba(29,36,64,.10); }
+        .form-group input[readonly] { background: #F3F4F7; color: var(--text-muted); }
+        table { width: 100%; border-collapse: collapse; margin: 0 0 14px; }
+        th { background: #F7F8FB; color: var(--text-muted); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #EEF0F5; font-size: 14px; }
+        td input { padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; }
+        td input:focus { outline: none; border-color: var(--navy-light); box-shadow: 0 0 0 3px rgba(29,36,64,.10); }
+        .btn-acao { background: var(--accent); color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
+        .btn-acao:hover { background: var(--accent-dark); }
+        .btn-add { background: #fff; color: var(--navy); border: 1px dashed #B8BDD0; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; font-family: inherit; }
+        .btn-add:hover { background: #F7F8FB; border-color: var(--navy-light); }
+        .sugestoes-box { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(18,23,43,.12); z-index: 100; max-height: 220px; overflow-y: auto; display: none; margin-top: 4px; }
+        .sugestao-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #F1F2F6; font-size: 13px; }
+        .sugestao-item:hover { background: #F7F8FB; }
+        .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+        #totalGeral, #totalAPagar { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 18px; font-weight: 700; }
+        #totalAPagar { background: rgba(42,157,111,.08); border-color: rgba(42,157,111,.35); }
+        .barra-final { position: sticky; bottom: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 22px; margin: 6px -4px 0; background: rgba(255,255,255,.96); backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 -6px 20px rgba(18,23,43,.08); }
+        .barra-final .resumo-final { font-size: 13px; color: var(--text-muted); }
+        .barra-final .resumo-final strong { display: block; font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 20px; color: var(--green); }
+        .barra-final .btn-acao { padding: 12px 26px; font-size: 15px; }
+        .btn-upgrade { background: #fff; border: 2px dashed var(--navy-light); color: var(--navy); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-upgrade:hover { background: #F3F4F9; }
+        .upgrade-card { border: 1px solid #DDE0EC; background: #F7F8FC; border-radius: 10px; padding: 16px 18px; margin-top: 10px; }
         .upgrade-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .upgrade-topo strong { display: block; color: #1f4e79; font-size: 15px; }
+        .upgrade-topo strong { display: block; color: var(--navy); font-size: 15px; }
         .upgrade-topo span { font-size: 12px; color: #666; }
         .btn-remover-upgrade { background: none; border: 1px solid #dc3545; color: #dc3545; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 12px; }
-        .upgrade-card .destaque input { border: 2px solid #28a745; font-weight: bold; }
+        .upgrade-card .destaque input { border: 2px solid var(--green); font-weight: bold; }
         .upgrade-dica { font-size: 12px; color: #666; margin: 4px 0 0; }
         #resumoPagamento { font-size: 13px; margin-top: 10px; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; }
 
         .up-busca { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #b9cde3; border-radius: 8px; font-size: 14px; background: #fff; }
         .up-contagem { font-size: 13px; color: #666; margin: 10px 2px 6px; }
         .up-lista { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
-        .up-grupo { font-size: 12px; font-weight: bold; color: #1f4e79; text-transform: uppercase; letter-spacing: .4px; margin: 8px 2px 0; }
+        .up-grupo { font-size: 12px; font-weight: bold; color: var(--navy); text-transform: uppercase; letter-spacing: .4px; margin: 8px 2px 0; }
         .up-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #fff; border: 1px solid #dbe6f1; border-radius: 10px; padding: 14px 16px; cursor: pointer; font-size: 14px; }
-        .up-item:hover { border-color: #28a745; background: #f3fbf5; }
+        .up-item:hover { border-color: var(--green); background: #F2FAF6; }
         .up-item-icone { font-size: 18px; color: #555; }
         .up-link { display: inline-block; margin-top: 10px; font-size: 12.5px; color: #007bff; }
         .up-unidade { background: #fff; border: 1px solid #dbe6f1; border-radius: 10px; padding: 14px 16px; }
         .up-unidade-topo { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 14px; }
-        .up-titulo { font-size: 14px; font-weight: bold; color: #1f4e79; }
+        .up-titulo { font-size: 14px; font-weight: bold; color: var(--navy); }
         .up-x { background: none; border: none; font-size: 16px; color: #777; cursor: pointer; }
         .up-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
         .up-grid2 { grid-template-columns: repeat(2, 1fr); margin-bottom: 0; }
@@ -59,12 +75,47 @@
     </style>
 </head>
 <body>
+<div class="app">
 
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="novo-pedido.html" class="nav-item active"><span class="icon">🛒</span> Nova venda</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="produtos-pai.html" class="nav-item"><span class="icon">🗂</span> Produtos pai</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Nova venda</div>
+                <div class="page-subtitle">Selecione o cliente, os produtos e a forma de pagamento</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <a href="pedidos.html" class="btn btn-secondary">🧾 Ver pedidos</a>
+                <a href="produtos.html" class="btn btn-secondary">📦 Estoque</a>
+            </div>
+        </div>
+
+        <div class="content venda">
 <div class="container">
-    <h2>Novo Pedido de Venda</h2>
 
     <form id="formNovoPedido">
         <!-- Linha 1: Cliente, Vendedor, N° Pedido -->
+        <div class="secao">
         <div class="form-row">
             <div class="form-group" style="flex: 2;">
                 <label for="cliente">Cliente <a href="#" id="btnCadastrarCliente" style="font-size: 11px; float: right; color: #007bff;">+ Cadastrar novo cliente</a></label>
@@ -82,6 +133,9 @@
             </div>
         </div>
 
+        </div>
+
+        <div class="secao">
         <h3>Produtos</h3>
         <!-- Tabela de Produtos com Autocomplete de Estoque -->
         <table id="tabelaProdutos">
@@ -107,18 +161,24 @@
                 </tr>
             </tbody>
         </table>
-        <button type="button" id="btnAddProduto" class="btn-acao" style="font-size: 12px; padding: 6px 12px; margin-bottom: 20px;">+ Adicionar outro produto</button>
+        <button type="button" id="btnAddProduto" class="btn-add">+ Adicionar outro produto</button>
 
+        </div>
+
+        <div class="secao">
         <h3>Totais do Pedido</h3>
         <div class="totals-grid">
             <div class="form-group"><label>Valor dos produtos</label><input type="text" id="totalProdutos" value="0,00" readonly></div>
             <div class="form-group"><label>Valor do frete</label><input type="text" id="totalFrete" value="0,00"></div>
             <div class="form-group"><label>Valor do desconto</label><input type="text" id="totalDesconto" value="0,00"></div>
-            <div class="form-group"><label>Total Geral</label><input type="text" id="totalGeral" value="0,00" readonly style="font-weight:bold; color:#007bff;"></div>
+            <div class="form-group"><label>Total Geral</label><input type="text" id="totalGeral" value="0,00" readonly style="color: var(--navy);"></div>
             <div class="form-group"><label>Abatido (upgrade)</label><input type="text" id="totalUpgrade" value="0,00" readonly></div>
-            <div class="form-group"><label>A pagar</label><input type="text" id="totalAPagar" value="0,00" readonly style="font-weight:bold; color:#28a745;"></div>
+            <div class="form-group"><label>A pagar</label><input type="text" id="totalAPagar" value="0,00" readonly style="color: var(--green);"></div>
         </div>
 
+        </div>
+
+        <div class="secao">
         <h3>Pagamento e Transporte</h3>
         <div class="form-row">
             <div class="form-group">
@@ -276,6 +336,9 @@
             </div>
         </div>
 
+        </div>
+
+        <div class="secao">
         <h3>Observações</h3>
         <div class="form-row">
             <div class="form-group">
@@ -288,11 +351,20 @@
             </div>
         </div>
 
-        <div style="margin-top: 30px; text-align: right;">
-            <button type="submit" class="btn-acao" style="padding: 12px 25px; font-size: 16px;">Finalizar e Salvar Pedido</button>
+        </div>
+
+        <div class="barra-final">
+            <div class="resumo-final">A pagar<strong id="resumoFinal">R$ 0,00</strong></div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <a href="pedidos.html" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn-acao">Finalizar e salvar pedido</button>
+            </div>
         </div>
     </form>
 </div>
+        </div><!-- /content -->
+    </div><!-- /main -->
+</div><!-- /app -->
 
 <!-- MODAL DE CADASTRO DE CLIENTE COMPLETO -->
 <div id="modalCliente" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">

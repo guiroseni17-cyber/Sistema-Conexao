@@ -56,6 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const aPagar = geral - upgrade;
         document.getElementById("totalUpgrade").value = upgrade.toFixed(2);
         document.getElementById("totalAPagar").value = aPagar.toFixed(2);
+        const resumoFinal = document.getElementById("resumoFinal");
+        if (resumoFinal) resumoFinal.textContent = Number(aPagar || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
         // Resumo: quanto já foi lançado nas formas de pagamento
         const lancado = Array.from(document.querySelectorAll(".pag-valor"))
@@ -616,7 +618,9 @@ document.addEventListener("DOMContentLoaded", () => {
             pedidoEditando = pedido;
 
             document.title = `Editar Pedido #${pedido.id}`;
-            document.querySelector(".container h2").textContent = `Editar Pedido de Venda #${pedido.id}`;
+            document.querySelector(".page-title").textContent = `Editar pedido #${pedido.id}`;
+            document.querySelector(".page-subtitle").textContent = "Altere os dados do pedido e salve";
+            document.title = `Editar pedido #${pedido.id} - FoneNinja`;
             document.querySelector("#formNovoPedido button[type='submit']").textContent = "Salvar alterações";
 
             // Cliente e vendedor

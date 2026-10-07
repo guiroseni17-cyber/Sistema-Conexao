@@ -81,7 +81,15 @@
         .rec-topo { flex-direction: column; align-items: flex-start; }
         .rec-pedido { text-align: left; }
     }
+    .rec-nav { max-width: 800px; margin: 0 auto 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .rec-nav .rec-nav-marca { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; color: var(--navy); margin-right: auto; }
+    .rec-nav a { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600; color: var(--navy); }
+    .rec-nav a:hover { background: #F7F8FB; border-color: var(--navy-light); }
+    .rec-nav a.destaque { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .rec-nav a.destaque:hover { background: var(--accent-dark); }
+    .rec-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
     @media print {
+        .rec-nav { display: none; }
         body { background: #fff; padding: 0; }
         .rec { box-shadow: none; border-radius: 0; max-width: 100%; }
         .rec-acoes { display: none; }
@@ -90,6 +98,15 @@
 </style>
 </head>
 <body>
+    <nav class="rec-nav">
+        <span class="rec-nav-marca">忍 FoneNinja</span>
+        <a href="index.html">▤ Dashboard</a>
+        <a href="pedidos.html">🧾 Pedidos</a>
+        <a href="compras.html">📥 Compras</a>
+        <a href="produtos.html">📦 Estoque</a>
+        <a href="clientes.html">👤 Clientes</a>
+        <a href="novo-pedido.html" class="destaque">+ Nova venda</a>
+    </nav>
     <div class="rec" id="recibo">
 
         <div class="rec-topo">
@@ -150,6 +167,8 @@
 
     <div class="rec-acoes">
         <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir recibo</button>
+        <a class="btn btn-secondary" href="pedidos.html">← Voltar aos pedidos</a>
+        <a class="btn btn-secondary" href="novo-pedido.html">+ Nova venda</a>
     </div>
 
 <script src="js/api.js"></script>
