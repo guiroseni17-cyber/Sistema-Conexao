@@ -1,6 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
     const tabela = document.querySelector("#tabelaProdutos tbody");
-    document.getElementById("n_pedido").value = Math.floor(100 + Math.random() * 900);
+       // Modo edição: novo-pedido.html?id=123
+    const pedidoEditId = new URLSearchParams(window.location.search).get("id");
+    let pedidoEditando = null; // guarda o pedido carregado quando estamos editando
+
+    // N° do pedido: o número real, igual ao da lista de pedidos
+    async function definirNumeroPedido() {
+        const campo = document.getElementById("n_pedido");
+        if (pedidoEditId) {
+            campo.value = pedidoEditId;
+            return;
+        }
+        try {
+            const r = await api.pedidos.proximoNumero();
+            campo.value = r.proximo;
+        } catch (err) {
+            campo.value = "";
+        }
+    }
 
     let produtosEstoque = []; // vem da API real (/api/produtos)
     async function carregarEstoque() {
