@@ -79,14 +79,9 @@ async function carregarRecibo() {
             </tr>
         `).join('');
 
-        // Totais
-        const totalQtd = pedido.itens.reduce((s, i) => s + Number(i.quantidade), 0);
-        document.getElementById('r-totais').innerHTML = `
-            <b>Total de quantidades</b><span>${totalQtd.toFixed(2).replace('.', ',')}</span>
-            <b>Número total de itens</b><span>${pedido.itens.length} produto(s)</span>
-            <b>Valor total dos produtos</b><span>${formatarMoeda(pedido.valor_total)}</span>
-            <b>Valor total do pedido</b><span>${formatarMoeda(pedido.valor_total)}</span>
-        `;
+        // Total do pedido (uma linha)
+        document.getElementById('r-total').innerHTML =
+            `<b>Total do pedido</b><span>${formatarMoeda(pedido.valor_total)}</span>`;
 
         // Parcelas
         const parcelas = montarParcelas(pedido);
@@ -100,13 +95,10 @@ async function carregarRecibo() {
                 </tr>`).join('')
             : '<tr><td colspan="4">Sem pagamentos registrados</td></tr>';
 
-        // Aparelho recebido em troca
-        document.getElementById('r-obs-troca').innerHTML = (pedido.trocas || []).map(t =>
-            `<div><b>Aparelho recebido na troca</b>${esc(t.produto_nome)}${t.modelo ? ' ' + esc(t.modelo) : ''}${t.imei ? '<br>IMEI ' + esc(t.imei) : ''}</div>`
-        ).join('');
-
-        // Observações do pedido
-        document.getElementById('r-observacoes').textContent = pedido.observacoes || '';
+        // Observações do pedido: o bloco só aparece se tiver texto
+        const obs = (pedido.observacoes || '').trim();
+        document.getElementById('r-observacoes').textContent = obs;
+        document.getElementById('r-obs-bloco').style.display = obs ? '' : 'none';
 
         // Termo de garantia fixo (vem de js/garantia.js)
         document.getElementById('r-garantia').innerHTML =
