@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     configurarLinha(tabela.querySelector("tr"));
 
-    document.getElementById("btnAddProduto").addEventListener("click", () => {
+function adicionarLinha() {
         const novaLinha = document.createElement("tr");
         novaLinha.innerHTML = `
             <td style="position: relative;">
@@ -116,7 +116,10 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         tabela.appendChild(novaLinha);
         configurarLinha(novaLinha);
-    });
+        return novaLinha;
+    }
+
+    document.getElementById("btnAddProduto").addEventListener("click", adicionarLinha);
 
     // Dinâmica de Formas de Pagamento múltiplas
     const qtdPagamentoInput = document.getElementById("qtdFormasPagamento");
@@ -303,7 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const pagamentos = Array.from(document.querySelectorAll(".linha-pagamento")).map(linha => ({
             forma_pagamento: linha.querySelector(".pag-forma").value,
-            parcelas: 1,
+            parcelas: Number(linha.dataset.parcelas) || 1,
             valor: Number(linha.querySelector(".pag-valor").value) || 0
         })).filter(p => p.valor > 0);
 
@@ -315,18 +318,84 @@ document.addEventListener("DOMContentLoaded", () => {
         if (desconto > 0) observacoes += `\nDesconto: R$ ${desconto.toFixed(2)}`;
 
         try {
-            const resultado = await api.pedidos.criar({
+            const dados = {
                 cliente_id: Number(inputClienteId.value),
                 itens,
                 pagamentos,
                 observacoes: observacoes.trim() || null
-            });
-            alert(resultado.mensagem);
+            };
+
+            let resultado;
+            if (pedidoEditando) {
+                // EDIÇÃO: atualiza o pedido existente (mantém o valor da troca já registrado)
+                dados.valor_troca = Number(pedidoEditando.valor_troca || 0);
+                resultado = await api.pedidos.editar(pedidoEditando.id, dados);
+                alert(`Pedido #${pedidoEditando.id} atualizado com sucesso.`);
+            } else {
+                resultado = await api.pedidos.criar(dados);
+                alert(`Pedido #${resultado.id} criado com sucesso.`);
+            }
             window.location.href = 'pedidos.html';
         } catch (err) {
             alert('Erro ao salvar pedido: ' + err.message);
         }
     });
 
+    // Carrega o pedido existente nos campos da tela (modo edição)
+    async function carregarPedidoParaEdicao(id) {
+        try {
+            const pedido = await api.pedidos.buscar(id);
+
+            if (pedido.status === 'cancelado') {
+                alert('Pedido cancelado não pode ser editado.');
+                window.location.href = 'pedidos.html';
+                return;
+            }
+            pedidoEditando = pedido;
+
+            document.title = `Editar Pedido #${pedido.id}`;
+            document.querySelector(".container h2").textContent = `Editar Pedido de Venda #${pedido.id}`;
+            document.querySelector("#formNovoPedido button[type='submit']").textContent = "Salvar alterações";
+
+            // Cliente e vendedor
+            inputCliente.value = pedido.cliente_nome;
+            inputClienteId.value = pedido.cliente_id;
+            if (pedido.vendedor_nome) document.getElementById("vendedor").value = pedido.vendedor_nome;
+
+            // Itens
+            tabela.innerHTML = "";
+            pedido.itens.forEach(item => {
+                const linha = adicionarLinha();
+                linha.dataset.produtoId = item.produto_id;
+                linha.querySelector(".prod-busca").value = `${item.produto_nome}${item.modelo ? ' - ' + item.modelo : ''}`;
+                linha.querySelector(".prod-qtd").value = item.quantidade;
+                linha.querySelector(".prod-unit").value = Number(item.preco_unitario).toFixed(2);
+            });
+            calcularTotais();
+
+            // Pagamentos
+            if (pedido.pagamentos && pedido.pagamentos.length > 0) {
+                qtdPagamentoInput.value = pedido.pagamentos.length;
+                qtdPagamentoInput.dispatchEvent(new Event("input"));
+                const linhasPag = document.querySelectorAll(".linha-pagamento");
+                pedido.pagamentos.forEach((p, i) => {
+                    if (!linhasPag[i]) return;
+                    linhasPag[i].querySelector(".pag-forma").value = p.forma_pagamento;
+                    linhasPag[i].querySelector(".pag-valor").value = p.valor;
+                    linhasPag[i].dataset.parcelas = p.parcelas;
+                });
+            }
+
+            // Observações
+            const textareas = document.querySelectorAll("textarea");
+            if (textareas[0]) textareas[0].value = pedido.observacoes || "";
+        } catch (err) {
+            alert("Erro ao carregar o pedido para edição: " + err.message);
+            window.location.href = "pedidos.html";
+        }
+    }
+
+    definirNumeroPedido();
     carregarEstoque();
+    if (pedidoEditId) carregarPedidoParaEdicao(pedidoEditId);
 });
