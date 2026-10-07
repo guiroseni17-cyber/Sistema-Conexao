@@ -5,6 +5,7 @@ const controller = require('../controllers/productController');
 router.get('/', controller.listar);
 router.get('/:id', controller.buscarPorId);
 router.get('/:id/historico', controller.historico);
+router.post('/lote', controller.criarLote);
 router.post('/', controller.criar);
 router.put('/:id', controller.editar);
 router.delete('/:id', controller.remover);
