@@ -108,6 +108,13 @@ async function carregarRecibo() {
         // Observações do pedido
         document.getElementById('r-observacoes').textContent = pedido.observacoes || '';
 
+       // Termo de garantia fixo (vem de js/garantia.js)
+        document.getElementById('r-garantia').innerHTML =
+            `<h5>${esc(GARANTIA_LOJA.titulo)}</h5>` +
+            GARANTIA_LOJA.secoes.map(s =>
+                `<h6>${esc(s.titulo)}</h6>` + s.linhas.map(l => `<p>${esc(l)}</p>`).join('')
+            ).join('');
+
         if (pedido.status === 'cancelado') {
             document.getElementById('recibo').style.opacity = '0.6';
             document.getElementById('r-numero').innerHTML += ' <span style="font-size:14px;">(CANCELADO)</span>';
