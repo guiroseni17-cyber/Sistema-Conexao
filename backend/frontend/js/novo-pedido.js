@@ -82,8 +82,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const filtrados = produtosEstoque.filter(p =>
-                p.nome.toLowerCase().includes(termo) ||
-                (p.modelo && p.modelo.toLowerCase().includes(termo))
+                p.quantidade > 0 && (
+                    p.nome.toLowerCase().includes(termo) ||
+                    (p.modelo && p.modelo.toLowerCase().includes(termo))
+                )
             );
             if (filtrados.length > 0) {
                 boxSugestoes.style.display = "block";
