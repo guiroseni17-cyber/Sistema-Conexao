@@ -46,8 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const geral = somaProdutos + frete - desconto;
         document.getElementById("totalGeral").value = geral.toFixed(2);
 
-        const custoUpgrade = parseFloat(document.getElementById("upCusto").value) || 0;
-        const upgrade = upgradeAtivo ? custoUpgrade : 0;
+        const upgrade = valorAbatidoUpgrade();
         const aPagar = geral - upgrade;
         document.getElementById("totalUpgrade").value = upgrade.toFixed(2);
         document.getElementById("totalAPagar").value = aPagar.toFixed(2);
@@ -299,24 +298,133 @@ document.addEventListener("DOMContentLoaded", () => {
     // UPGRADE (aparelho recebido como forma de pagamento)
     const cardUpgrade = document.getElementById("cardUpgrade");
     const btnAddUpgrade = document.getElementById("btnAddUpgrade");
+    const upBusca = document.getElementById("upBusca");
+    const upLista = document.getElementById("upLista");
+    const upContagem = document.getElementById("upContagem");
+    const upBuscaBox = document.getElementById("upBuscaBox");
+    const upSelecionado = document.getElementById("upSelecionado");
+    const upManualCampos = document.getElementById("upManualCampos");
+    let upSel = null;      // aparelho escolhido na lista: { nome, marca, modelo, categoria, condicao }
+    let upManual = false;  // true quando o aparelho é digitado à mão
+
+    const numUp = (id) => parseFloat(document.getElementById(id).value) || 0;
+    const brl = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+    // Quanto o upgrade abate do pedido: preço de compra - desconto
+    function valorAbatidoUpgrade() {
+        if (!upgradeAtivo) return 0;
+        return Math.max(0, numUp("upCompra") - numUp("upDesconto"));
+    }
+
+    function erroCompra(mostrar) {
+        document.getElementById("upCompraErro").style.display = mostrar ? "block" : "none";
+        document.getElementById("upCompra").classList.toggle("invalido", mostrar);
+    }
+
+    function etapaUpgrade(etapa) {
+        upBuscaBox.style.display = etapa === "busca" ? "block" : "none";
+        upSelecionado.style.display = etapa === "dados" ? "block" : "none";
+    }
+
+    // Catálogo = aparelhos já cadastrados no estoque (um por título, sem repetir)
+    function catalogoUpgrade() {
+        const vistos = new Map();
+        produtosEstoque.forEach(p => {
+            if (p.categoria !== "aparelho_novo" && p.categoria !== "aparelho_seminovo") return;
+            const chave = [p.nome, p.marca, p.modelo, p.condicao].map(x => (x || "").toLowerCase()).join("|");
+            if (!vistos.has(chave)) vistos.set(chave, p);
+        });
+        return Array.from(vistos.values());
+    }
+
+    function renderizarListaUpgrade() {
+        const termo = upBusca.value.trim().toLowerCase();
+        const catalogo = catalogoUpgrade().filter(p =>
+            !termo || [p.nome, p.modelo, p.marca, p.imei].some(v => v && String(v).toLowerCase().includes(termo))
+        );
+        upContagem.textContent = `${catalogo.length} resultado${catalogo.length === 1 ? "" : "s"}`;
+        upLista.innerHTML = "";
+        catalogo.slice(0, 100).forEach(p => {
+            const item = document.createElement("div");
+            item.className = "up-item";
+            const nome = document.createElement("span");
+            nome.textContent = p.nome;
+            const icone = document.createElement("span");
+            icone.className = "up-item-icone";
+            icone.textContent = "⊕";
+            item.append(nome, icone);
+            item.addEventListener("click", () => selecionarUpgrade(p));
+            upLista.appendChild(item);
+        });
+    }
+
+    function selecionarUpgrade(p) {
+        upManual = false;
+        upSel = {
+            nome: p.nome,
+            marca: p.marca || "",
+            modelo: p.modelo || "",
+            categoria: p.categoria,
+            condicao: p.condicao || "seminovo_bom"
+        };
+        document.getElementById("upTituloTxt").textContent = p.nome;
+        upManualCampos.style.display = "none";
+        etapaUpgrade("dados");
+        document.getElementById("upCompra").focus();
+    }
+
+    function limparUpgrade() {
+        cardUpgrade.querySelectorAll("input, textarea").forEach(el => { el.value = ""; el.disabled = false; });
+        cardUpgrade.querySelectorAll("select").forEach(el => el.disabled = false);
+        document.getElementById("upCondicao").value = "seminovo_bom";
+        document.getElementById("upGarantia").value = "3 meses";
+        document.getElementById("upDesconto").value = "";
+        document.getElementById("upAbate").textContent = brl(0);
+        document.getElementById("avisoUpgrade").style.display = "none";
+        document.getElementById("upTrocar").style.display = "";
+        upSel = null;
+        upManual = false;
+        erroCompra(false);
+    }
 
     function mostrarUpgrade(ativo) {
         upgradeAtivo = ativo;
         cardUpgrade.style.display = ativo ? "block" : "none";
         btnAddUpgrade.style.display = ativo ? "none" : "inline-block";
-        if (!ativo) {
-            cardUpgrade.querySelectorAll("input, textarea").forEach(el => el.value = "");
-            document.getElementById("upCondicao").value = "seminovo_bom";
+        limparUpgrade();
+        if (ativo) {
+            etapaUpgrade("busca");
+            renderizarListaUpgrade();
         }
         calcularTotais();
     }
 
     btnAddUpgrade.addEventListener("click", () => {
         mostrarUpgrade(true);
-        document.getElementById("upNome").focus();
+        upBusca.focus();
     });
     document.getElementById("btnRemoverUpgrade").addEventListener("click", () => mostrarUpgrade(false));
-    cardUpgrade.addEventListener("input", calcularTotais);
+    upBusca.addEventListener("input", renderizarListaUpgrade);
+    document.getElementById("upManual").addEventListener("click", (e) => {
+        e.preventDefault();
+        upManual = true;
+        upSel = null;
+        document.getElementById("upTituloTxt").textContent = "Aparelho digitado manualmente";
+        upManualCampos.style.display = "grid";
+        etapaUpgrade("dados");
+        document.getElementById("upNome").focus();
+    });
+    document.getElementById("upTrocar").addEventListener("click", () => {
+        upSel = null;
+        upManual = false;
+        etapaUpgrade("busca");
+        upBusca.focus();
+    });
+    document.getElementById("upCompra").addEventListener("input", () => erroCompra(false));
+    cardUpgrade.addEventListener("input", () => {
+        document.getElementById("upAbate").textContent = brl(valorAbatidoUpgrade());
+        calcularTotais();
+    });
     containerParcelas.addEventListener("input", calcularTotais);
     qtdPagamentoInput.addEventListener("input", calcularTotais);
 
@@ -326,29 +434,62 @@ document.addEventListener("DOMContentLoaded", () => {
         // Se o pedido editado já tem upgrade registrado, não envia de novo
         if (pedidoEditando && pedidoEditando.trocas && pedidoEditando.trocas.length > 0) return null;
 
-        const nome = document.getElementById("upNome").value.trim();
-        const custo = parseFloat(document.getElementById("upCusto").value) || 0;
-
-        if (!nome) {
-            alert("Informe o nome do aparelho do upgrade.");
-            document.getElementById("upNome").focus();
+        let base;
+        if (upManual) {
+            const nome = document.getElementById("upNome").value.trim();
+            if (!nome) {
+                alert("Informe o nome do aparelho do upgrade.");
+                document.getElementById("upNome").focus();
+                return false;
+            }
+            const condicao = document.getElementById("upCondicao").value;
+            base = {
+                nome,
+                marca: document.getElementById("upMarca").value.trim(),
+                modelo: document.getElementById("upModelo").value.trim(),
+                categoria: condicao === "novo" ? "aparelho_novo" : "aparelho_seminovo",
+                condicao
+            };
+        } else if (upSel) {
+            base = upSel;
+        } else {
+            alert("Escolha o aparelho do upgrade na lista (ou digite o aparelho manualmente).");
+            upBusca.focus();
             return false;
         }
-        if (custo <= 0) {
-            alert("Informe o valor pago no aparelho do upgrade.");
-            document.getElementById("upCusto").focus();
+
+        const compra = numUp("upCompra");
+        const desconto = numUp("upDesconto");
+        if (compra <= 0) {
+            erroCompra(true);
+            document.getElementById("upCompra").focus();
+            return false;
+        }
+        if (desconto > compra) {
+            alert("O desconto não pode ser maior que o preço de compra.");
+            document.getElementById("upDesconto").focus();
+            return false;
+        }
+        const bateriaTxt = document.getElementById("upBateria").value.trim();
+        const bateria = bateriaTxt === "" ? null : Number(bateriaTxt);
+        if (bateria !== null && (isNaN(bateria) || bateria < 0 || bateria > 100)) {
+            alert("A bateria deve ser um valor entre 0 e 100%.");
+            document.getElementById("upBateria").focus();
             return false;
         }
 
         return {
-            nome,
-            categoria: "aparelho_seminovo",
-            marca: document.getElementById("upMarca").value.trim(),
-            modelo: document.getElementById("upModelo").value.trim(),
+            ...base,
+            preco_compra: compra,
+            desconto,
+            valor_abatido: compra - desconto, // vira o custo do produto no estoque
+            garantia: document.getElementById("upGarantia").value,
+            bateria,
             imei: document.getElementById("upImei").value.trim(),
-            condicao: document.getElementById("upCondicao").value,
-            valor_abatido: custo, // vira o valor de custo do produto no estoque
-            preco_venda_sugerido: parseFloat(document.getElementById("upVenda").value) || 0,
+            imei2: document.getElementById("upImei2").value.trim(),
+            numero_serie: document.getElementById("upSerial").value.trim(),
+            preco_venda_sugerido: numUp("upVenda"),
+            preco_venda_atacado: numUp("upVendaAtacado") || null,
             observacoes: document.getElementById("upObs").value.trim() || null
         };
     }
@@ -471,10 +612,24 @@ document.addEventListener("DOMContentLoaded", () => {
             if (pedido.trocas && pedido.trocas.length > 0) {
                 const t = pedido.trocas[0];
                 mostrarUpgrade(true);
-                document.getElementById("upNome").value = t.produto_nome || "";
-                document.getElementById("upModelo").value = t.modelo || "";
+                const garantiaSel = document.getElementById("upGarantia");
+                if (t.garantia && !Array.from(garantiaSel.options).some(o => o.value === t.garantia)) {
+                    garantiaSel.add(new Option(t.garantia, t.garantia));
+                }
+                document.getElementById("upTituloTxt").textContent = t.produto_nome || "";
+                document.getElementById("upCompra").value = Number(t.preco_compra != null ? t.preco_compra : t.valor_abatido).toFixed(2);
+                document.getElementById("upDesconto").value = Number(t.desconto || 0) > 0 ? Number(t.desconto).toFixed(2) : "";
+                if (t.garantia) garantiaSel.value = t.garantia;
+                document.getElementById("upBateria").value = t.bateria != null ? t.bateria : "";
                 document.getElementById("upImei").value = t.imei || "";
-                document.getElementById("upCusto").value = Number(t.valor_abatido).toFixed(2);
+                document.getElementById("upImei2").value = t.imei2 || "";
+                document.getElementById("upSerial").value = t.numero_serie || "";
+                document.getElementById("upVenda").value = Number(t.preco_venda || 0) > 0 ? Number(t.preco_venda).toFixed(2) : "";
+                document.getElementById("upVendaAtacado").value = t.preco_venda_atacado != null ? Number(t.preco_venda_atacado).toFixed(2) : "";
+                document.getElementById("upObs").value = t.observacoes || "";
+                document.getElementById("upAbate").textContent = brl(t.valor_abatido);
+                etapaUpgrade("dados");
+                document.getElementById("upTrocar").style.display = "none";
                 cardUpgrade.querySelectorAll("input, select, textarea").forEach(el => el.disabled = true);
                 document.getElementById("btnRemoverUpgrade").style.display = "none";
                 document.getElementById("avisoUpgrade").style.display = "block";
