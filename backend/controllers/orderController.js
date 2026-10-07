@@ -9,6 +9,80 @@ function resumoFormasPagamento(pagamentos) {
         .join(' + ');
 }
 
+// Erro de regra de negócio (devolve 400 com a mensagem para a tela mostrar)
+function erroNegocio(mensagem) {
+    const e = new Error(mensagem);
+    e.statusCode = 400;
+    return e;
+}
+
+function responderErro(res, err, mensagemPadrao) {
+    if (err.statusCode) return res.status(err.statusCode).json({ erro: err.message });
+    return res.status(500).json({ erro: mensagemPadrao, detalhe: err.message });
+}
+
+// Quanto o aparelho da troca abate do pedido: preço de compra - desconto.
+// (se vier só valor_abatido, como nas versões antigas da tela, usa ele)
+function calcularValorTroca(troca) {
+    if (!troca || !troca.nome) return 0;
+    if (troca.preco_compra !== undefined && troca.preco_compra !== null && troca.preco_compra !== '') {
+        return Math.max(0, Number(troca.preco_compra) - Number(troca.desconto || 0));
+    }
+    return Number(troca.valor_abatido || 0);
+}
+
+// Cadastra o aparelho recebido na troca no estoque e vincula ao pedido.
+async function registrarTroca(connection, pedidoId, troca, usuarioId) {
+    const valorAbatido = calcularValorTroca(troca);
+    const precoCompra = (troca.preco_compra !== undefined && troca.preco_compra !== null && troca.preco_compra !== '')
+        ? Number(troca.preco_compra) : null;
+
+    if (troca.imei) {
+        const [dup] = await connection.query(
+            'SELECT id FROM produtos WHERE imei = ? AND ativo = TRUE AND quantidade > 0', [troca.imei]
+        );
+        if (dup.length > 0) {
+            throw erroNegocio(`Já existe um aparelho em estoque com o IMEI ${troca.imei}`);
+        }
+    }
+
+    const [produtoTrocaResult] = await connection.query(
+        `INSERT INTO produtos
+            (nome, categoria, marca, modelo, imei, imei2, numero_serie, bateria, garantia, condicao,
+             quantidade, preco_custo, preco_venda, preco_venda_atacado, origem, observacoes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 'troca', ?)`,
+        [
+            troca.nome,
+            troca.categoria || 'aparelho_seminovo',
+            troca.marca || null,
+            troca.modelo || null,
+            troca.imei || null,
+            troca.imei2 || null,
+            troca.numero_serie || null,
+            (troca.bateria === undefined || troca.bateria === null || troca.bateria === '') ? null : Number(troca.bateria),
+            troca.garantia || null,
+            troca.condicao || 'seminovo_bom',
+            valorAbatido,
+            troca.preco_venda_sugerido || 0,
+            troca.preco_venda_atacado || null,
+            troca.observacoes || null
+        ]
+    );
+
+    await connection.query(
+        'INSERT INTO pedido_trocas (pedido_id, produto_id, valor_abatido, preco_compra, desconto) VALUES (?, ?, ?, ?, ?)',
+        [pedidoId, produtoTrocaResult.insertId, valorAbatido, precoCompra, Number(troca.desconto || 0)]
+    );
+
+    await connection.query(
+        `INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, referencia, usuario_id)
+         VALUES (?, 'entrada_troca', 1, ?, ?)`,
+        [produtoTrocaResult.insertId, `Troca no Pedido #${pedidoId}`, usuarioId || null]
+    );
+
+    return valorAbatido;
+}
+
 // Próximo número de pedido (o mesmo id que o pedido vai receber ao ser salvo)
 exports.proximoNumero = async (req, res) => {
     const connection = await db.getConnection();
@@ -77,7 +151,8 @@ exports.buscarPorId = async (req, res) => {
         `, [pedidoId]);
 
         const [trocas] = await db.query(`
-            SELECT pt.*, pr.nome AS produto_nome, pr.modelo, pr.imei
+            SELECT pt.*, pr.nome AS produto_nome, pr.modelo, pr.marca, pr.categoria, pr.condicao, pr.imei, pr.imei2,
+                   pr.numero_serie, pr.bateria, pr.garantia, pr.preco_venda, pr.preco_venda_atacado, pr.observacoes
             FROM pedido_trocas pt JOIN produtos pr ON pr.id = pt.produto_id
             WHERE pt.pedido_id = ?
         `, [pedidoId]);
@@ -133,7 +208,7 @@ exports.criar = async (req, res) => {
             valorTotal += item.quantidade * item.preco_unitario;
         }
 
-        const valorTroca = troca ? Number(troca.valor_abatido || 0) : 0;
+        const valorTroca = calcularValorTroca(troca);
         const valorAPagar = valorTotal - valorTroca;
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
@@ -161,10 +236,10 @@ exports.criar = async (req, res) => {
                 [item.produto_id]
             );
             if (produtoRows.length === 0) {
-                throw new Error(`Produto id ${item.produto_id} não encontrado`);
+                throw erroNegocio(`Produto id ${item.produto_id} não encontrado`);
             }
             if (produtoRows[0].quantidade < item.quantidade) {
-                throw new Error(`Estoque insuficiente para o produto id ${item.produto_id}`);
+                throw erroNegocio(`Estoque insuficiente para o produto id ${item.produto_id}`);
             }
 
             await connection.query(
@@ -185,33 +260,7 @@ exports.criar = async (req, res) => {
         }
 
         if (troca && troca.nome) {
-            const [produtoTrocaResult] = await connection.query(
-                `INSERT INTO produtos
-                    (nome, categoria, marca, modelo, imei, condicao, quantidade, preco_custo, preco_venda, origem, observacoes)
-                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 'troca', ?)`,
-                [
-                    troca.nome,
-                    troca.categoria || 'aparelho_seminovo',
-                    troca.marca || null,
-                    troca.modelo || null,
-                    troca.imei || null,
-                    troca.condicao || 'seminovo_bom',
-                    troca.valor_abatido || 0,
-                    troca.preco_venda_sugerido || 0,
-                    troca.observacoes || null
-                ]
-            );
-
-            await connection.query(
-                'INSERT INTO pedido_trocas (pedido_id, produto_id, valor_abatido) VALUES (?, ?, ?)',
-                [pedidoId, produtoTrocaResult.insertId, valorTroca]
-            );
-
-            await connection.query(
-                `INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, referencia, usuario_id)
-                 VALUES (?, 'entrada_troca', 1, ?, ?)`,
-                [produtoTrocaResult.insertId, `Troca no Pedido #${pedidoId}`, req.user?.id || null]
-            );
+            await registrarTroca(connection, pedidoId, troca, req.user?.id);
         }
 
         await connection.commit();
@@ -226,7 +275,7 @@ exports.criar = async (req, res) => {
 
     } catch (err) {
         await connection.rollback();
-        res.status(500).json({ erro: 'Erro ao criar pedido', detalhe: err.message });
+        responderErro(res, err, 'Erro ao criar pedido');
     } finally {
         connection.release();
     }
@@ -278,10 +327,10 @@ exports.editar = async (req, res) => {
                 'SELECT quantidade FROM produtos WHERE id = ? FOR UPDATE', [item.produto_id]
             );
             if (produtoRows.length === 0) {
-                throw new Error(`Produto id ${item.produto_id} não encontrado`);
+                throw erroNegocio(`Produto id ${item.produto_id} não encontrado`);
             }
             if (produtoRows[0].quantidade < item.quantidade) {
-                throw new Error(`Estoque insuficiente para o produto id ${item.produto_id}`);
+                throw erroNegocio(`Estoque insuficiente para o produto id ${item.produto_id}`);
             }
 
             await connection.query(
@@ -328,33 +377,7 @@ exports.editar = async (req, res) => {
             'SELECT id FROM pedido_trocas WHERE pedido_id = ?', [pedidoId]
         );
         if (troca && troca.nome && trocasExistentes.length === 0) {
-            valorTrocaFinal = Number(troca.valor_abatido || 0);
-
-            const [produtoTrocaResult] = await connection.query(
-                `INSERT INTO produtos
-                    (nome, categoria, marca, modelo, imei, condicao, quantidade, preco_custo, preco_venda, origem, observacoes)
-                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 'troca', ?)`,
-                [
-                    troca.nome,
-                    troca.categoria || 'aparelho_seminovo',
-                    troca.marca || null,
-                    troca.modelo || null,
-                    troca.imei || null,
-                    troca.condicao || 'seminovo_bom',
-                    troca.valor_abatido || 0,
-                    troca.preco_venda_sugerido || 0,
-                    troca.observacoes || null
-                ]
-            );
-            await connection.query(
-                'INSERT INTO pedido_trocas (pedido_id, produto_id, valor_abatido) VALUES (?, ?, ?)',
-                [pedidoId, produtoTrocaResult.insertId, valorTrocaFinal]
-            );
-            await connection.query(
-                `INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, referencia, usuario_id)
-                 VALUES (?, 'entrada_troca', 1, ?, ?)`,
-                [produtoTrocaResult.insertId, `Troca no Pedido #${pedidoId}`, req.user?.id || null]
-            );
+            valorTrocaFinal = await registrarTroca(connection, pedidoId, troca, req.user?.id);
         }
         const valorAPagar = valorTotal - valorTrocaFinal;
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
@@ -384,7 +407,7 @@ exports.editar = async (req, res) => {
         });
     } catch (err) {
         await connection.rollback();
-        res.status(500).json({ erro: 'Erro ao editar pedido', detalhe: err.message });
+        responderErro(res, err, 'Erro ao editar pedido');
     } finally {
         connection.release();
     }
