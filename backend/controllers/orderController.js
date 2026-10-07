@@ -267,7 +267,32 @@ exports.editar = async (req, res) => {
 
             valorTotal += item.quantidade * item.preco_unitario;
         }
+        
+        // Histórico de estoque: registra só a diferença líquida por produto
+        // (positivo = passou a vender mais, negativo = devolveu ao estoque)
+        const saldo = {};
+        itensAtuais.forEach(i => {
+            saldo[i.produto_id] = (saldo[i.produto_id] || 0) - Number(i.quantidade);
+        });
+        itens.forEach(i => {
+            saldo[i.produto_id] = (saldo[i.produto_id] || 0) + Number(i.quantidade);
+        });
+        for (const [produtoId, diff] of Object.entries(saldo)) {
+            if (diff === 0) continue;
+            await connection.query(
+                `INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, referencia, usuario_id)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [
+                    produtoId,
+                    diff > 0 ? 'saida_venda' : 'estorno_venda',
+                    -diff,
+                    `Edição do Pedido #${pedidoId}`,
+                    req.user?.id || null
+                ]
+            );
+        }
 
+        
         const valorTrocaFinal = Number(valor_troca || 0);
         const valorAPagar = valorTotal - valorTrocaFinal;
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
