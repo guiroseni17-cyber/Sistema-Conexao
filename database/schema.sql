@@ -47,10 +47,26 @@ CREATE TABLE fornecedores (
 );
 
 -- ---------------------------------------------
--- Modelos base (catálogo de variações)
+-- Produtos pai (ex: "iPhone 17 Pro Max")
+-- Catálogo de referência: NÃO é estoque. Cada pai tem várias
+-- variações (cor, armazenamento...) na tabela modelos_base.
+-- ---------------------------------------------
+CREATE TABLE produtos_pai (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    categoria ENUM('aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca') NOT NULL DEFAULT 'aparelho_novo',
+    condicao ENUM('novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular') DEFAULT 'novo',
+    marca VARCHAR(60),
+    preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
+    ativo BOOLEAN DEFAULT TRUE,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ---------------------------------------------
+-- Modelos base = VARIAÇÕES de um produto pai (ex: "256GB · Laranja")
 -- NÃO são estoque: só guardam nome/categoria/preço sugerido.
--- O produto real só nasce em "produtos" quando uma Compra
--- dá entrada nesse modelo com valor de custo.
+-- O produto real só nasce em "produtos" quando uma Compra, um Upgrade
+-- (troca) ou uma Entrada manual dá entrada nessa variação.
 -- ---------------------------------------------
 CREATE TABLE modelos_base (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -60,6 +76,8 @@ CREATE TABLE modelos_base (
     marca VARCHAR(60),
     modelo VARCHAR(100),
     preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
+    produto_pai_id INT NULL,  -- a qual produto pai essa variação pertence
+    atributos TEXT NULL,      -- JSON: [{"nome":"Cor","valor":"Laranja"}, ...]
     ativo BOOLEAN DEFAULT TRUE,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 );

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Produtos pai</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.pai-card { background: #fff; border: 1px solid #E5E7EF; border-radius: 8px; margin-bottom: 10px; }
+.pai-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; user-select: none; }
+.pai-topo:hover { background: #FAFAFC; }
+.pai-nome { font-weight: 700; font-size: 14.5px; }
+.pai-meta { font-size: 12.5px; color: #6B7080; margin-top: 2px; }
+.pai-badges { display: flex; align-items: center; gap: 8px; }
+.pai-seta { color: #6B7080; transition: transform .15s; display: inline-block; }
+.pai-card.aberto .pai-seta { transform: rotate(90deg); }
+.pai-corpo { display: none; border-top: 1px solid #E5E7EF; padding: 14px 18px 18px; }
+.pai-card.aberto .pai-corpo { display: block; }
+.pai-acoes { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.pai-vazio { color: #6B7080; font-size: 13px; padding: 14px 0; }
+.btn-perigo { color: var(--accent-dark); }
+
+.var-secao { border: 1px solid #E5E7EF; border-radius: 8px; margin-top: 16px; }
+.var-secao-topo { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #E5E7EF; font-weight: 700; font-size: 13.5px; }
+.var-attr { border-bottom: 1px solid #EEF0F5; padding: 10px 14px; }
+.var-attr:last-child { border-bottom: none; }
+.var-attr-topo { display: flex; gap: 8px; align-items: center; }
+.var-attr-topo input { flex: 1; }
+.var-valor { display: flex; gap: 8px; align-items: center; margin: 8px 0 0 26px; }
+.var-valor input[type=text] { flex: 1; }
+.var-lista { max-height: 260px; overflow-y: auto; }
+.var-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid #EEF0F5; font-size: 13.5px; }
+.var-item:last-child { border-bottom: none; }
+.var-item.desabilitado { color: #9AA0B4; }
+.var-vazio { padding: 16px; text-align: center; color: #6B7080; font-size: 13px; }
+.var-link { color: #1f7a45; cursor: pointer; font-size: 12.5px; margin-left: 12px; font-weight: 600; }
+.modal-fundo { display: none; position: fixed; inset: 0; background: rgba(18,23,43,0.45); align-items: center; justify-content: center; z-index: 50; }
+.modal-caixa { background: #fff; border-radius: 8px; max-width: 96vw; max-height: 92vh; overflow-y: auto; padding: 24px; }
+.aviso-propaga { background: #FFF8E6; border: 1px solid #F0DFA8; border-radius: 6px; padding: 9px 12px; font-size: 12.5px; color: #6B5A1D; margin-top: 4px; }
+.aviso-erro { color: var(--accent-dark); font-size: 12.5px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="produtos-pai.html" class="nav-item active"><span class="icon">🗂</span> Produtos pai</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Produtos pai</div>
+                <div class="page-subtitle">Catálogo de referência: o pai e todas as suas variações (cor, armazenamento...). Não é estoque.</div>
+            </div>
+            <button class="btn btn-primary" id="btn-novo-pai">+ Novo produto pai</button>
+        </div>
+
+        <div class="content">
+            <div class="search-bar">
+                <input type="text" id="busca" placeholder="Buscar produto pai ou variação (ex: 17 pro max)...">
+            </div>
+            <div id="lista-pais"><div class="text-muted">Carregando...</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Editar produto pai -->
+<div id="modal-pai" class="modal-fundo">
+    <div class="modal-caixa" style="width:520px;">
+        <div class="flex-between" style="margin-bottom:18px;">
+            <h3 style="font-size:16px;">Editar produto pai</h3>
+            <span style="cursor:pointer; color:#6B7080;" onclick="fecharModal('modal-pai')">✕</span>
+        </div>
+        <form id="form-pai">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Nome do produto pai</label>
+                    <input type="text" id="ep-nome" required>
+                </div>
+                <div class="form-group">
+                    <label>Marca</label>
+                    <input type="text" id="ep-marca" placeholder="Ex: Apple">
+                </div>
+                <div class="form-group">
+                    <label>Preço de venda sugerido (R$)</label>
+                    <input type="number" id="ep-venda" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="ep-categoria">
+                        <option value="aparelho_novo">Aparelho novo</option>
+                        <option value="aparelho_seminovo">Aparelho seminovo</option>
+                        <option value="acessorio">Acessório</option>
+                        <option value="peca">Peça</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Condição</label>
+                    <select id="ep-condicao">
+                        <option value="novo">Novo</option>
+                        <option value="seminovo_excelente">Seminovo - Excelente</option>
+                        <option value="seminovo_bom">Seminovo - Bom</option>
+                        <option value="seminovo_regular">Seminovo - Regular</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label style="display:flex; gap:8px; align-items:center; font-weight:400;">
+                        <input type="checkbox" id="ep-aplicar-preco"> Aplicar esse preço a todas as variações
+                    </label>
+                </div>
+            </div>
+            <div class="aviso-propaga">
+                Se você trocar o <b>nome</b> ou a <b>marca</b>, todas as variações são atualizadas e os produtos que já estão no estoque
+                (criados a partir delas) também. Categoria e condição mudam só no catálogo.
+            </div>
+            <div class="flex-between mt-16">
+                <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-pai')">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Editar variação -->
+<div id="modal-var" class="modal-fundo">
+    <div class="modal-caixa" style="width:460px;">
+        <div class="flex-between" style="margin-bottom:6px;">
+            <h3 style="font-size:16px;">Editar variação</h3>
+            <span style="cursor:pointer; color:#6B7080;" onclick="fecharModal('modal-var')">✕</span>
+        </div>
+        <p class="text-muted" id="ev-titulo" style="font-size:12.5px; margin:0 0 14px;"></p>
+        <form id="form-var">
+            <div id="ev-attrs"></div>
+            <div class="form-group">
+                <label>Preço de venda sugerido (R$)</label>
+                <input type="number" id="ev-venda" step="0.01" min="0">
+            </div>
+            <div class="flex-between mt-16">
+                <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-var')">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Novo produto pai / adicionar variações (gerador de combinações) -->
+<div id="modal-variacoes" class="modal-fundo">
+    <div class="modal-caixa" style="width:720px;">
+        <div class="flex-between" style="margin-bottom:6px;">
+            <h3 style="font-size:16px;" id="v-titulo">Novo produto pai</h3>
+            <span style="cursor:pointer; color:#6B7080;" onclick="fecharModal('modal-variacoes')">✕</span>
+        </div>
+        <p class="text-muted" style="font-size:12.5px; margin:0 0 16px;">
+            Informe os atributos (ex: Armazenamento e Cor). O sistema gera todas as combinações e você escolhe quais cadastrar.
+            Elas ficam no catálogo e só viram estoque quando você dá entrada (Compra, Upgrade ou Entrada manual).
+        </p>
+
+        <div class="form-grid">
+            <div class="form-group full">
+                <label>Produto pai</label>
+                <input type="text" id="v-nome" placeholder="Ex: iPhone 17 Pro Max">
+                <div class="aviso-erro" id="v-aviso-nome" style="display:none;"></div>
+            </div>
+            <div class="form-group campo-novo">
+                <label>Categoria</label>
+                <select id="v-categoria">
+                    <option value="aparelho_novo">Aparelho novo</option>
+                    <option value="aparelho_seminovo">Aparelho seminovo</option>
+                    <option value="acessorio">Acessório</option>
+                    <option value="peca">Peça</option>
+                </select>
+            </div>
+            <div class="form-group campo-novo">
+                <label>Condição</label>
+                <select id="v-condicao">
+                    <option value="novo">Novo</option>
+                    <option value="seminovo_excelente">Seminovo - Excelente</option>
+                    <option value="seminovo_bom">Seminovo - Bom</option>
+                    <option value="seminovo_regular">Seminovo - Regular</option>
+                </select>
+            </div>
+            <div class="form-group campo-novo">
+                <label>Marca</label>
+                <input type="text" id="v-marca" placeholder="Ex: Apple">
+            </div>
+            <div class="form-group campo-novo">
+                <label>Preço de venda (R$) — opcional</label>
+                <input type="number" id="v-venda" step="0.01" min="0" placeholder="Vale para todas">
+            </div>
+        </div>
+
+        <div class="var-secao">
+            <div class="var-secao-topo">
+                <span>Atributos e Valores</span>
+                <button type="button" class="btn btn-secondary btn-sm" id="v-add-atributo">+ Adicionar atributo</button>
+            </div>
+            <div id="v-atributos"></div>
+        </div>
+
+        <div class="var-secao">
+            <div class="var-secao-topo">
+                <span>Variações geradas</span>
+                <span style="font-weight:400; font-size:13px;">
+                    <span id="v-resumo"></span>
+                    <span class="var-link" id="v-marcar-todas">Marcar todas</span>
+                    <span class="var-link" id="v-desmarcar-todas">Desmarcar todas</span>
+                </span>
+            </div>
+            <div id="v-lista" class="var-lista"></div>
+        </div>
+
+        <div class="flex-between mt-16">
+            <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-variacoes')">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="v-salvar">Cadastrar</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/produtos-pai.js"></script>
+</body>
+</html>

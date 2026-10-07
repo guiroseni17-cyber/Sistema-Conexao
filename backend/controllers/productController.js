@@ -42,13 +42,32 @@ exports.buscarPorId = async (req, res) => {
     }
 };
 
-// Criar produto manualmente (compra normal, não troca)
+// Criar produto manualmente (entrada manual, não troca).
+// Pode partir de uma variação de PRODUTO PAI (modelo_base_id): os dados vêm do catálogo
+// e, se já existir no estoque um item dessa variação sem IMEI, a quantidade é somada nele.
 exports.criar = async (req, res) => {
     try {
-        const {
+        let {
             nome, categoria, marca, modelo, imei, condicao,
-            quantidade, estoque_minimo, preco_custo, preco_venda, observacoes
+            quantidade, estoque_minimo, preco_custo, preco_venda, observacoes, modelo_base_id
         } = req.body;
+
+        let base = null;
+        if (modelo_base_id) {
+            const [bases] = await db.query(
+                'SELECT * FROM modelos_base WHERE id = ? AND ativo = TRUE', [modelo_base_id]
+            );
+            if (bases.length === 0) {
+                return res.status(400).json({ erro: 'A variação do produto pai escolhida não existe mais no catálogo' });
+            }
+            base = bases[0];
+            nome = nome || base.nome;
+            categoria = categoria || base.categoria;
+            marca = marca ?? base.marca;
+            modelo = modelo || base.modelo;
+            condicao = condicao || base.condicao;
+            if (preco_venda === undefined || preco_venda === null || preco_venda === '') preco_venda = base.preco_venda;
+        }
 
         if (!nome || preco_venda === undefined) {
             return res.status(400).json({ erro: 'Nome e preço de venda são obrigatórios' });
@@ -63,18 +82,48 @@ exports.criar = async (req, res) => {
             }
         }
 
+        const qtd = Number(quantidade) || 0;
+        const referencia = base ? `Entrada manual (produto pai: ${modelo || base.nome})` : 'Cadastro manual do produto';
+
+        // Variação sem IMEI que já está no estoque: repõe em vez de duplicar o item
+        if (base && !imei) {
+            const [existente] = await db.query(
+                'SELECT id FROM produtos WHERE modelo_base_id = ? AND ativo = TRUE AND imei IS NULL ORDER BY id LIMIT 1',
+                [base.id]
+            );
+            if (existente.length > 0) {
+                const produtoId = existente[0].id;
+                await db.query(
+                    'UPDATE produtos SET quantidade = quantidade + ?, preco_custo = IF(? > 0, ?, preco_custo) WHERE id = ?',
+                    [qtd, Number(preco_custo) || 0, Number(preco_custo) || 0, produtoId]
+                );
+                if (qtd > 0) {
+                    await db.query(
+                        `INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, referencia, usuario_id)
+                         VALUES (?, 'ajuste_manual', ?, ?, ?)`,
+                        [produtoId, qtd, referencia, req.user?.id || null]
+                    );
+                }
+                return res.status(200).json({
+                    id: produtoId,
+                    somado: true,
+                    mensagem: `Esta variação já estava no estoque: ${qtd} unidade(s) somada(s) ao item existente.`
+                });
+            }
+        }
+
         const [result] = await db.query(
-            `INSERT INTO produtos (nome, categoria, marca, modelo, imei, condicao, quantidade, estoque_minimo, preco_custo, preco_venda, origem, observacoes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'compra', ?)`,
+            `INSERT INTO produtos (nome, categoria, marca, modelo, imei, condicao, quantidade, estoque_minimo, preco_custo, preco_venda, origem, observacoes, modelo_base_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'compra', ?, ?)`,
             [nome, categoria || 'aparelho_novo', marca, modelo, imei, condicao || 'novo',
-             quantidade || 0, estoque_minimo ?? 2, preco_custo || 0, preco_venda, observacoes]
+             qtd, estoque_minimo ?? 2, preco_custo || 0, preco_venda, observacoes, base ? base.id : null]
         );
 
-        if (Number(quantidade) > 0) {
+        if (qtd > 0) {
             await db.query(
                 `INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, referencia, usuario_id)
-                 VALUES (?, 'ajuste_manual', ?, 'Cadastro manual do produto', ?)`,
-                [result.insertId, Number(quantidade), req.user?.id || null]
+                 VALUES (?, 'ajuste_manual', ?, ?, ?)`,
+                [result.insertId, qtd, referencia, req.user?.id || null]
             );
         }
 

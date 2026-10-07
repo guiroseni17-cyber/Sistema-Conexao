@@ -49,43 +49,74 @@ async function carregarProdutos() {
     }
 }
 
-async function carregarModelos() {
-    const tabela = document.getElementById('tabela-modelos');
-    const busca = document.getElementById('busca').value;
+// ---------- Entrada manual a partir de um produto pai ----------
+let catalogoPais = []; // [{ id, nome, variacoes: [...] }] — só referência, não é estoque
+
+async function carregarCatalogoPais() {
     try {
-        const modelos = await api.modelos.listar(busca ? `?busca=${encodeURIComponent(busca)}` : '');
-        tabela.innerHTML = modelos.length ? modelos.map(m => `
-            <tr>
-                <td><strong>${esc(m.nome)}</strong>${m.modelo ? `<div class="text-muted" style="font-size:12px;">${esc(m.modelo)}</div>` : ''}</td>
-                <td>${rotulosCategoria[m.categoria] || m.categoria}</td>
-                <td class="text-right">${Number(m.preco_venda) > 0 ? formatarMoeda(m.preco_venda) : '-'}</td>
-                <td class="text-right">
-                    <div class="row-actions">
-                        <a class="btn btn-primary btn-sm" href="nova-compra.html?modelo=${m.id}">Dar entrada</a>
-                        <button class="btn btn-secondary btn-sm" data-nome="${esc(m.nome)}" onclick="removerModelo(${m.id}, this.dataset.nome)">Remover</button>
-                    </div>
-                </td>
-            </tr>
-        `).join('') : '<tr><td colspan="4" class="empty-state">Nenhum modelo base cadastrado</td></tr>';
+        catalogoPais = agruparPorPai(await api.modelos.listar());
     } catch (err) {
-        tabela.innerHTML = `<tr><td colspan="4" class="text-muted">Erro ao carregar: ${err.message}</td></tr>`;
+        console.error('Não foi possível carregar os produtos pai:', err);
+        catalogoPais = [];
     }
+    const sel = document.getElementById('p-pai');
+    sel.innerHTML = '<option value="">Sem produto pai (cadastro avulso)</option>';
+    catalogoPais.forEach((pai, i) => {
+        const opt = document.createElement('option');
+        opt.value = i; // índice no catálogo
+        opt.textContent = `${pai.nome} (${pai.variacoes.length} variações)`;
+        sel.appendChild(opt);
+    });
 }
 
-async function removerModelo(id, nome) {
-    if (!confirm(`Remover o modelo base "${nome}"? Produtos que já entraram no estoque a partir dele não são afetados.`)) return;
-    try {
-        await api.modelos.remover(id);
-        carregarModelos();
-    } catch (err) {
-        alert('Erro ao remover modelo: ' + err.message);
+function trocarPaiEntrada() {
+    const selVar = document.getElementById('p-variacao');
+    const pai = catalogoPais[document.getElementById('p-pai').value];
+    document.getElementById('form-produto').dataset.modeloBaseId = '';
+    selVar.innerHTML = '';
+    if (!pai) {
+        selVar.disabled = true;
+        selVar.innerHTML = '<option value="">Escolha o produto pai primeiro</option>';
+        return;
     }
+    selVar.disabled = false;
+    selVar.innerHTML = '<option value="">Selecione a variação...</option>';
+    pai.variacoes.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = `${v.rotulo}${v.estoque > 0 ? ` (estoque: ${v.estoque})` : ''}`;
+        selVar.appendChild(opt);
+    });
 }
 
-function abrirModalProduto() {
-    document.getElementById('form-produto').reset();
-    delete document.getElementById('form-produto').dataset.editId;
+function escolherVariacaoEntrada() {
+    const pai = catalogoPais[document.getElementById('p-pai').value];
+    const v = pai && pai.variacoes.find(x => String(x.id) === document.getElementById('p-variacao').value);
+    const form = document.getElementById('form-produto');
+    if (!v) { form.dataset.modeloBaseId = ''; return; }
+    form.dataset.modeloBaseId = v.id;
+    document.getElementById('p-nome').value = v.nome;
+    document.getElementById('p-categoria').value = v.categoria;
+    document.getElementById('p-condicao').value = v.condicao || 'novo';
+    document.getElementById('p-marca').value = v.marca || '';
+    document.getElementById('p-modelo').value = v.modelo || pai.nome;
+    if (Number(v.preco_venda) > 0) document.getElementById('p-venda').value = v.preco_venda;
+    document.getElementById('p-quantidade').focus();
+}
+
+document.getElementById('p-pai').addEventListener('change', trocarPaiEntrada);
+document.getElementById('p-variacao').addEventListener('change', escolherVariacaoEntrada);
+
+async function abrirModalProduto() {
+    const form = document.getElementById('form-produto');
+    form.reset();
+    delete form.dataset.editId;
+    form.dataset.modeloBaseId = '';
+    document.getElementById('titulo-modal-produto').textContent = 'Entrada manual';
+    document.getElementById('p-pai-box').style.display = '';
     document.getElementById('modal-produto').style.display = 'flex';
+    await carregarCatalogoPais();
+    trocarPaiEntrada();
 }
 
 function fecharModalProduto() {
@@ -106,6 +137,8 @@ async function editarProduto(id) {
     document.getElementById('p-venda').value = p.preco_venda;
     document.getElementById('p-obs').value = p.observacoes || '';
     document.getElementById('form-produto').dataset.editId = id;
+    document.getElementById('titulo-modal-produto').textContent = 'Editar produto';
+    document.getElementById('p-pai-box').style.display = 'none';
     document.getElementById('modal-produto').style.display = 'flex';
 }
 
@@ -157,7 +190,9 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
             await api.produtos.editar(editId, dados);
             delete e.target.dataset.editId;
         } else {
-            await api.produtos.criar(dados);
+            if (e.target.dataset.modeloBaseId) dados.modelo_base_id = Number(e.target.dataset.modeloBaseId);
+            const r = await api.produtos.criar(dados);
+            if (r.somado) alert(r.mensagem);
         }
         fecharModalProduto();
         carregarProdutos();
@@ -166,7 +201,7 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
     }
 });
 
-document.getElementById('busca').addEventListener('input', debounce(() => { carregarProdutos(); carregarModelos(); }, 300));
+document.getElementById('busca').addEventListener('input', debounce(carregarProdutos, 300));
 document.getElementById('filtro-categoria').addEventListener('change', carregarProdutos);
 document.getElementById('filtro-estoque').addEventListener('change', carregarProdutos);
 
@@ -178,259 +213,4 @@ function debounce(fn, delay) {
     };
 }
 
-// =====================================================
-// Cadastro com variações (produto pai + atributos)
-// =====================================================
-let varAtributos = [];          // [{ nome, valores: [{ texto, ativo }] }]
-let varDesmarcadas = new Set(); // variações que o usuário desmarcou (minúsculo)
-let varExistentes = new Set();  // nomes já cadastrados (minúsculo)
-const VAR_MAX = 500;
-
-function criarEl(tag, classe, texto) {
-    const e = document.createElement(tag);
-    if (classe) e.className = classe;
-    if (texto !== undefined) e.textContent = texto;
-    return e;
-}
-
-async function abrirModalVariacoes() {
-    ['v-nome', 'v-marca', 'v-venda'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('v-categoria').value = 'aparelho_novo';
-    document.getElementById('v-condicao').value = 'novo';
-    varAtributos = [
-        { nome: 'Armazenamento', valores: [{ texto: '', ativo: true }] },
-        { nome: 'Cor', valores: [{ texto: '', ativo: true }] }
-    ];
-    varDesmarcadas = new Set();
-    varExistentes = new Set();
-    document.getElementById('modal-variacoes').style.display = 'flex';
-    renderizarAtributos();
-    renderizarVariacoes();
-    try {
-        const [produtos, modelos] = await Promise.all([api.produtos.listar(), api.modelos.listar()]);
-        varExistentes = new Set([...produtos, ...modelos].map(p => String(p.nome).trim().toLowerCase()));
-        renderizarVariacoes();
-    } catch (err) {
-        console.error('Não foi possível checar produtos já cadastrados:', err);
-    }
-}
-
-function fecharModalVariacoes() {
-    document.getElementById('modal-variacoes').style.display = 'none';
-}
-
-// Separa "256GB, 512GB" em dois valores
-function separarValoresPorVirgula(atributo, indice) {
-    const partes = atributo.valores[indice].texto.split(',').map(t => t.trim()).filter(Boolean);
-    if (partes.length <= 1) {
-        atributo.valores[indice].texto = partes[0] || '';
-        return;
-    }
-    const novos = partes.map(t => ({ texto: t, ativo: true }));
-    atributo.valores.splice(indice, 1, ...novos);
-}
-
-function renderizarAtributos(focarAtributo) {
-    const box = document.getElementById('v-atributos');
-    box.innerHTML = '';
-
-    varAtributos.forEach((attr, ai) => {
-        const bloco = criarEl('div', 'var-attr');
-
-        const topo = criarEl('div', 'var-attr-topo');
-        const nome = criarEl('input');
-        nome.type = 'text';
-        nome.placeholder = 'Atributo (ex: Cor)';
-        nome.value = attr.nome;
-        nome.addEventListener('input', () => { attr.nome = nome.value; renderizarVariacoes(); });
-
-        const btnValor = criarEl('button', 'btn btn-secondary btn-sm', '+ Valor');
-        btnValor.type = 'button';
-        btnValor.addEventListener('click', () => {
-            attr.valores.push({ texto: '', ativo: true });
-            renderizarAtributos(ai);
-        });
-
-        const btnDel = criarEl('button', 'btn btn-secondary btn-sm', '🗑');
-        btnDel.type = 'button';
-        btnDel.title = 'Remover atributo';
-        btnDel.addEventListener('click', () => {
-            varAtributos.splice(ai, 1);
-            renderizarAtributos();
-            renderizarVariacoes();
-        });
-
-        topo.append(nome, btnValor, btnDel);
-        bloco.appendChild(topo);
-
-        attr.valores.forEach((valor, vi) => {
-            const linha = criarEl('div', 'var-valor');
-
-            const chk = criarEl('input');
-            chk.type = 'checkbox';
-            chk.checked = valor.ativo;
-            chk.addEventListener('change', () => { valor.ativo = chk.checked; renderizarVariacoes(); });
-
-            const txt = criarEl('input', 'var-valor-input');
-            txt.type = 'text';
-            txt.placeholder = 'Valor (ex: 256GB) — separe vários por vírgula';
-            txt.value = valor.texto;
-            txt.addEventListener('input', () => { valor.texto = txt.value; renderizarVariacoes(); });
-            txt.addEventListener('change', () => {
-                if (txt.value.includes(',')) {
-                    valor.texto = txt.value;
-                    separarValoresPorVirgula(attr, vi);
-                    renderizarAtributos();
-                    renderizarVariacoes();
-                }
-            });
-            txt.addEventListener('keydown', (ev) => {
-                if (ev.key !== 'Enter') return;
-                ev.preventDefault();
-                valor.texto = txt.value;
-                separarValoresPorVirgula(attr, vi);
-                if (attr.valores[attr.valores.length - 1].texto.trim() !== '') {
-                    attr.valores.push({ texto: '', ativo: true });
-                }
-                renderizarAtributos(ai);
-                renderizarVariacoes();
-            });
-
-            const del = criarEl('button', 'btn btn-secondary btn-sm', '🗑');
-            del.type = 'button';
-            del.title = 'Remover valor';
-            del.addEventListener('click', () => {
-                attr.valores.splice(vi, 1);
-                renderizarAtributos();
-                renderizarVariacoes();
-            });
-
-            linha.append(chk, txt, del);
-            bloco.appendChild(linha);
-        });
-
-        box.appendChild(bloco);
-    });
-
-    if (focarAtributo !== undefined) {
-        const campos = box.querySelectorAll('.var-attr')[focarAtributo].querySelectorAll('.var-valor-input');
-        if (campos.length) campos[campos.length - 1].focus();
-    }
-}
-
-// Todas as combinações: produto pai + um valor de cada atributo (na ordem dos atributos)
-function gerarNomesVariacoes() {
-    const base = document.getElementById('v-nome').value.trim();
-    if (!base) return [];
-
-    const grupos = varAtributos
-        .map(a => {
-            const vistos = new Set();
-            return a.valores
-                .filter(v => v.ativo && v.texto.trim())
-                .map(v => v.texto.trim())
-                .filter(t => { const k = t.toLowerCase(); if (vistos.has(k)) return false; vistos.add(k); return true; });
-        })
-        .filter(g => g.length > 0);
-
-    let combos = [[]];
-    grupos.forEach(grupo => {
-        const proximo = [];
-        combos.forEach(c => grupo.forEach(v => proximo.push([...c, v])));
-        combos = proximo;
-    });
-
-    const nomes = [];
-    const vistos = new Set();
-    combos.forEach(c => {
-        const nome = [base, ...c].join(' ');
-        if (!vistos.has(nome.toLowerCase())) { vistos.add(nome.toLowerCase()); nomes.push(nome); }
-    });
-    return nomes;
-}
-
-function variacoesSelecionadas() {
-    return gerarNomesVariacoes().filter(n => {
-        const k = n.toLowerCase();
-        return !varDesmarcadas.has(k) && !varExistentes.has(k);
-    });
-}
-
-function atualizarResumoVariacoes() {
-    const todas = gerarNomesVariacoes();
-    const selecionadas = variacoesSelecionadas();
-    document.getElementById('v-resumo').textContent = `${todas.length} variações - ${selecionadas.length} selecionadas`;
-    const btn = document.getElementById('v-salvar');
-    btn.textContent = selecionadas.length ? `Cadastrar ${selecionadas.length} modelo${selecionadas.length === 1 ? '' : 's'} base` : 'Cadastrar';
-    btn.disabled = selecionadas.length === 0 || selecionadas.length > VAR_MAX;
-}
-
-function renderizarVariacoes() {
-    const lista = document.getElementById('v-lista');
-    lista.innerHTML = '';
-    const nomes = gerarNomesVariacoes();
-
-    if (!document.getElementById('v-nome').value.trim()) {
-        lista.appendChild(criarEl('div', 'var-vazio', 'Informe o produto pai para gerar as variações.'));
-    } else if (nomes.length > VAR_MAX) {
-        lista.appendChild(criarEl('div', 'var-vazio', `Muitas combinações (${nomes.length}). O máximo é ${VAR_MAX} por vez — desmarque alguns valores.`));
-    } else {
-        nomes.forEach(nome => {
-            const k = nome.toLowerCase();
-            const existe = varExistentes.has(k);
-            const linha = criarEl('label', 'var-item' + (existe ? ' desabilitado' : ''));
-            const chk = criarEl('input');
-            chk.type = 'checkbox';
-            chk.checked = !existe && !varDesmarcadas.has(k);
-            chk.disabled = existe;
-            chk.addEventListener('change', () => {
-                if (chk.checked) varDesmarcadas.delete(k); else varDesmarcadas.add(k);
-                atualizarResumoVariacoes();
-            });
-            linha.append(chk, criarEl('span', '', nome));
-            if (existe) linha.appendChild(criarEl('span', 'badge badge-gray', 'já cadastrado'));
-            lista.appendChild(linha);
-        });
-    }
-    atualizarResumoVariacoes();
-}
-
-document.getElementById('v-nome').addEventListener('input', renderizarVariacoes);
-document.getElementById('v-add-atributo').addEventListener('click', () => {
-    varAtributos.push({ nome: '', valores: [{ texto: '', ativo: true }] });
-    renderizarAtributos();
-});
-document.getElementById('v-marcar-todas').addEventListener('click', () => {
-    varDesmarcadas = new Set();
-    renderizarVariacoes();
-});
-document.getElementById('v-desmarcar-todas').addEventListener('click', () => {
-    gerarNomesVariacoes().forEach(n => varDesmarcadas.add(n.toLowerCase()));
-    renderizarVariacoes();
-});
-
-document.getElementById('v-salvar').addEventListener('click', async () => {
-    const nomes = variacoesSelecionadas();
-    if (nomes.length === 0) return;
-    const btn = document.getElementById('v-salvar');
-    btn.disabled = true;
-    try {
-        const r = await api.modelos.criarLote({
-            nomes,
-            categoria: document.getElementById('v-categoria').value,
-            condicao: document.getElementById('v-condicao').value,
-            marca: document.getElementById('v-marca').value.trim(),
-            modelo: document.getElementById('v-nome').value.trim(),
-            preco_venda: Number(document.getElementById('v-venda').value) || 0
-        });
-        fecharModalVariacoes();
-        carregarModelos();
-        alert(r.mensagem);
-    } catch (err) {
-        alert('Erro ao cadastrar variações: ' + err.message);
-        btn.disabled = false;
-    }
-});
-
 carregarProdutos();
-carregarModelos();

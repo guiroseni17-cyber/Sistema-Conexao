@@ -10,7 +10,10 @@ const COLUNAS = [
     ['produtos', 'preco_venda_atacado', 'DECIMAL(10,2) NULL'],
     ['produtos', 'modelo_base_id', 'INT NULL'],
     ['pedido_trocas', 'preco_compra', 'DECIMAL(10,2) NULL'],
-    ['pedido_trocas', 'desconto', 'DECIMAL(10,2) NOT NULL DEFAULT 0']
+    ['pedido_trocas', 'desconto', 'DECIMAL(10,2) NOT NULL DEFAULT 0'],
+    // Produto pai: cada variação (modelos_base) aponta para o seu pai
+    ['modelos_base', 'produto_pai_id', 'INT NULL'],
+    ['modelos_base', 'atributos', 'TEXT NULL']
 ];
 
 // Tabelas novas (criadas só se ainda não existirem)
@@ -25,8 +28,54 @@ const TABELAS = [
         preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
         ativo BOOLEAN DEFAULT TRUE,
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+    // Produtos pai (ex: "iPhone 17 Pro Max"). As variações (cor, armazenamento...) ficam em modelos_base.
+    `CREATE TABLE IF NOT EXISTS produtos_pai (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nome VARCHAR(150) NOT NULL,
+        categoria ENUM('aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca') NOT NULL DEFAULT 'aparelho_novo',
+        condicao ENUM('novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular') DEFAULT 'novo',
+        marca VARCHAR(60),
+        preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
 ];
+
+// Variações cadastradas antes da existência do produto pai: o nome do pai estava
+// guardado na coluna "modelo". Agrupa por esse nome e cria os pais automaticamente.
+// Só mexe em variações sem pai, então rodar várias vezes não duplica nada.
+async function agruparVariacoesAntigas() {
+    const [soltas] = await db.query(
+        `SELECT id, nome, categoria, condicao, marca, modelo, preco_venda
+         FROM modelos_base WHERE ativo = TRUE AND produto_pai_id IS NULL ORDER BY id`
+    );
+    if (soltas.length === 0) return;
+
+    const grupos = new Map();
+    for (const m of soltas) {
+        const nomePai = String(m.modelo || '').trim() || String(m.nome).trim();
+        const chave = [nomePai.toLowerCase(), String(m.marca || '').toLowerCase(), m.categoria].join('|');
+        if (!grupos.has(chave)) {
+            grupos.set(chave, { nome: nomePai, categoria: m.categoria, condicao: m.condicao, marca: m.marca, preco: 0, ids: [] });
+        }
+        const g = grupos.get(chave);
+        g.ids.push(m.id);
+        if (!g.preco && Number(m.preco_venda) > 0) g.preco = Number(m.preco_venda);
+    }
+
+    for (const g of grupos.values()) {
+        const [r] = await db.query(
+            'INSERT INTO produtos_pai (nome, categoria, condicao, marca, preco_venda) VALUES (?, ?, ?, ?, ?)',
+            [g.nome, g.categoria, g.condicao, g.marca || null, g.preco]
+        );
+        await db.query(
+            'UPDATE modelos_base SET produto_pai_id = ?, modelo = ? WHERE id IN (?)',
+            [r.insertId, g.nome, g.ids]
+        );
+    }
+    console.log(`Migração: ${soltas.length} variação(ões) antigas agrupadas em ${grupos.size} produto(s) pai`);
+}
 
 async function migrar() {
     for (const sql of TABELAS) await db.query(sql);
@@ -41,6 +90,7 @@ async function migrar() {
             console.log(`Migração: coluna ${tabela}.${coluna} criada`);
         }
     }
+    await agruparVariacoesAntigas();
 }
 
 module.exports = { migrar };

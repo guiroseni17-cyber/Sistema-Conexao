@@ -334,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
         upSelecionado.style.display = etapa === "dados" ? "block" : "none";
     }
 
-  // Catálogo do upgrade = variações dos PRODUTOS PAI (referência). Não é o estoque:
+    // Catálogo do upgrade = variações dos PRODUTOS PAI (referência). Não é o estoque:
     // o que for escolhido aqui serve de base para cadastrar o produto real no estoque.
     function catalogoUpgrade() {
         return catalogoPais
@@ -346,7 +346,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (nome.includes("seminovo")) condicao = condicao.startsWith("seminovo") ? condicao : "seminovo_bom";
                 else if (nome.includes("lacrado")) condicao = "novo";
                 return {
+                    modelo_base_id: m.id,
                     nome: m.nome,
+                    rotulo: m.rotulo || m.nome,
+                    pai_nome: m.pai_nome || m.modelo || m.nome,
                     marca: m.marca,
                     modelo: m.modelo || m.pai_nome,
                     categoria: condicao === "novo" ? "aparelho_novo" : "aparelho_seminovo",
@@ -355,30 +358,51 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
+    // Todas as palavras digitadas precisam aparecer (ex: "17 pro max azul")
+    function combinaBusca(p, termo) {
+        if (!termo) return true;
+        const texto = [p.nome, p.pai_nome, p.marca].filter(Boolean).join(" ").toLowerCase();
+        return termo.split(/\s+/).every(palavra => texto.includes(palavra));
+    }
+
+    // Lista agrupada por produto pai: cabeçalho com o pai e, embaixo, as variações
     function renderizarListaUpgrade() {
         const termo = upBusca.value.trim().toLowerCase();
-        const catalogo = catalogoUpgrade().filter(p =>
-            !termo || [p.nome, p.modelo, p.marca, p.imei].some(v => v && String(v).toLowerCase().includes(termo))
-        );
+        const catalogo = catalogoUpgrade().filter(p => combinaBusca(p, termo));
         upContagem.textContent = `${catalogo.length} resultado${catalogo.length === 1 ? "" : "s"}`;
         upLista.innerHTML = "";
-        catalogo.slice(0, 100).forEach(p => {
-            const item = document.createElement("div");
-            item.className = "up-item";
-            const nome = document.createElement("span");
-            nome.textContent = p.nome;
-            const icone = document.createElement("span");
-            icone.className = "up-item-icone";
-            icone.textContent = "⊕";
-            item.append(nome, icone);
-            item.addEventListener("click", () => selecionarUpgrade(p));
-            upLista.appendChild(item);
+
+        const grupos = new Map();
+        catalogo.slice(0, 200).forEach(p => {
+            if (!grupos.has(p.pai_nome)) grupos.set(p.pai_nome, []);
+            grupos.get(p.pai_nome).push(p);
+        });
+
+        grupos.forEach((variacoes, paiNome) => {
+            const cab = document.createElement("div");
+            cab.className = "up-grupo";
+            cab.textContent = paiNome;
+            upLista.appendChild(cab);
+
+            variacoes.forEach(p => {
+                const item = document.createElement("div");
+                item.className = "up-item";
+                const nome = document.createElement("span");
+                nome.textContent = p.rotulo;
+                const icone = document.createElement("span");
+                icone.className = "up-item-icone";
+                icone.textContent = "⊕";
+                item.append(nome, icone);
+                item.addEventListener("click", () => selecionarUpgrade(p));
+                upLista.appendChild(item);
+            });
         });
     }
 
     function selecionarUpgrade(p) {
         upManual = false;
         upSel = {
+            modelo_base_id: p.modelo_base_id,
             nome: p.nome,
             marca: p.marca || "",
             modelo: p.modelo || "",

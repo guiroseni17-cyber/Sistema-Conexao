@@ -46,11 +46,20 @@ async function registrarTroca(connection, pedidoId, troca, usuarioId) {
         }
     }
 
+    // Aparelho escolhido a partir de um PRODUTO PAI: guarda o vínculo com a variação do catálogo
+    let modeloBaseId = null;
+    if (troca.modelo_base_id) {
+        const [bases] = await connection.query(
+            'SELECT id FROM modelos_base WHERE id = ? AND ativo = TRUE', [troca.modelo_base_id]
+        );
+        if (bases.length > 0) modeloBaseId = bases[0].id;
+    }
+
     const [produtoTrocaResult] = await connection.query(
         `INSERT INTO produtos
             (nome, categoria, marca, modelo, imei, imei2, numero_serie, bateria, garantia, condicao,
-             quantidade, preco_custo, preco_venda, preco_venda_atacado, origem, observacoes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 'troca', ?)`,
+             quantidade, preco_custo, preco_venda, preco_venda_atacado, origem, observacoes, modelo_base_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 'troca', ?, ?)`,
         [
             troca.nome,
             troca.categoria || 'aparelho_seminovo',
@@ -65,7 +74,8 @@ async function registrarTroca(connection, pedidoId, troca, usuarioId) {
             valorAbatido,
             troca.preco_venda_sugerido || 0,
             troca.preco_venda_atacado || null,
-            troca.observacoes || null
+            troca.observacoes || null,
+            modeloBaseId
         ]
     );
 

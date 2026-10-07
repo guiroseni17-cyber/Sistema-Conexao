@@ -59,10 +59,21 @@ const api = {
         editar: (id, dados) => apiRequest(`/produtos/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
         remover: (id) => apiRequest(`/produtos/${id}`, { method: 'DELETE' })
     },
+    // Lista plana de variações (já com pai_nome, rotulo e estoque) — usada nos seletores de Compra, Upgrade e Entrada manual
     modelos: {
         listar: (params = '') => apiRequest(`/modelos${params}`),
-        criarLote: (dados) => apiRequest('/modelos/lote', { method: 'POST', body: JSON.stringify(dados) }),
         remover: (id) => apiRequest(`/modelos/${id}`, { method: 'DELETE' })
+    },
+    // Produtos pai com as variações dentro (tela "Produtos pai")
+    pais: {
+        listar: (params = '') => apiRequest(`/pais${params}`),
+        buscar: (id) => apiRequest(`/pais/${id}`),
+        criar: (dados) => apiRequest('/pais', { method: 'POST', body: JSON.stringify(dados) }),
+        editar: (id, dados) => apiRequest(`/pais/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
+        remover: (id) => apiRequest(`/pais/${id}`, { method: 'DELETE' }),
+        adicionarVariacoes: (id, variacoes) => apiRequest(`/pais/${id}/variacoes`, { method: 'POST', body: JSON.stringify({ variacoes }) }),
+        editarVariacao: (id, varId, dados) => apiRequest(`/pais/${id}/variacoes/${varId}`, { method: 'PUT', body: JSON.stringify(dados) }),
+        removerVariacao: (id, varId) => apiRequest(`/pais/${id}/variacoes/${varId}`, { method: 'DELETE' })
     },
     clientes: {
         listar: (params = '') => apiRequest(`/clientes${params}`),
@@ -104,6 +115,20 @@ const api = {
         trocarSenha: (dados) => apiRequest('/usuarios/senha', { method: 'PUT', body: JSON.stringify(dados) })
     }
 };
+
+// Agrupa a lista plana de /api/modelos em [{ id, nome, marca, categoria, variacoes: [...] }]
+// (usado pelos seletores "Produto pai → Variação")
+function agruparPorPai(variacoes) {
+    const mapa = new Map();
+    variacoes.forEach(v => {
+        const chave = v.produto_pai_id || `solto-${v.id}`;
+        if (!mapa.has(chave)) {
+            mapa.set(chave, { id: v.produto_pai_id || null, nome: v.pai_nome || v.nome, marca: v.marca, categoria: v.categoria, variacoes: [] });
+        }
+        mapa.get(chave).variacoes.push(v);
+    });
+    return [...mapa.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
 
 // Evita que texto digitado (nome, observação...) quebre ou injete HTML na página
 function esc(texto) {
