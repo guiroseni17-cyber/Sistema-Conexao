@@ -108,7 +108,7 @@ async function carregarRecibo() {
         // Observações do pedido
         document.getElementById('r-observacoes').textContent = pedido.observacoes || '';
 
-       // Termo de garantia fixo (vem de js/garantia.js)
+        // Termo de garantia fixo (vem de js/garantia.js)
         document.getElementById('r-garantia').innerHTML =
             `<h5>${esc(GARANTIA_LOJA.titulo)}</h5>` +
             GARANTIA_LOJA.secoes.map(s =>
