@@ -56,6 +56,7 @@ const api = {
         buscar: (id) => apiRequest(`/produtos/${id}`),
         historico: (id) => apiRequest(`/produtos/${id}/historico`),
         criar: (dados) => apiRequest('/produtos', { method: 'POST', body: JSON.stringify(dados) }),
+        criarLote: (dados) => apiRequest('/produtos/lote', { method: 'POST', body: JSON.stringify(dados) }),
         editar: (id, dados) => apiRequest(`/produtos/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
         remover: (id) => apiRequest(`/produtos/${id}`, { method: 'DELETE' })
     },
@@ -99,6 +100,13 @@ const api = {
         trocarSenha: (dados) => apiRequest('/usuarios/senha', { method: 'PUT', body: JSON.stringify(dados) })
     }
 };
+
+// Evita que texto digitado (nome, observação...) quebre ou injete HTML na página
+function esc(texto) {
+    return String(texto ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
 
 function formatarMoeda(valor) {
     return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
