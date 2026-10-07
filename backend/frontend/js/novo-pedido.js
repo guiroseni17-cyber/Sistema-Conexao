@@ -36,6 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const unit = parseFloat(row.querySelector(".prod-unit").value) || 0;
             const totalLinha = qtd * unit;
             row.querySelector(".prod-total").value = totalLinha.toFixed(2);
+            const temUpgrade = document.getElementById("upNome").value.trim() !== "";
+            const upgrade = temUpgrade ? (parseFloat(document.getElementById("upCusto").value) || 0) : 0;
+        document.getElementById("totalUpgrade").value = upgrade.toFixed(2);
+        document.getElementById("totalAPagar").value = (geral - upgrade).toFixed(2);
             somaProdutos += totalLinha;
         });
 
@@ -277,6 +281,48 @@ function adicionarLinha() {
         document.getElementById(id).addEventListener("input", calcularTotais);
     });
 
+
+// ABAS (Pedido / Upgrade)
+    function trocarAba(id) {
+        document.querySelectorAll(".aba").forEach(b => b.classList.toggle("ativa", b.dataset.aba === id));
+        ["abaPedido", "abaUpgrade"].forEach(a => {
+            document.getElementById(a).style.display = (a === id ? "block" : "none");
+        });
+    }
+    document.querySelectorAll(".aba").forEach(b => b.addEventListener("click", () => trocarAba(b.dataset.aba)));
+    ["upNome", "upCusto"].forEach(id => document.getElementById(id).addEventListener("input", calcularTotais));
+
+    // Lê o aparelho do upgrade. Retorna: null (sem upgrade), false (dados inválidos) ou o objeto da troca.
+    function lerUpgrade() {
+        // Se o pedido editado já tem upgrade registrado, não envia de novo
+        if (pedidoEditando && pedidoEditando.trocas && pedidoEditando.trocas.length > 0) return null;
+
+        const nome = document.getElementById("upNome").value.trim();
+        if (!nome) return null;
+
+        const custo = parseFloat(document.getElementById("upCusto").value) || 0;
+        if (custo <= 0) {
+            alert("Informe o valor de custo do aparelho do upgrade.");
+            trocarAba("abaUpgrade");
+            document.getElementById("upCusto").focus();
+            return false;
+        }
+
+        return {
+            nome,
+            categoria: "aparelho_seminovo",
+            marca: document.getElementById("upMarca").value.trim(),
+            modelo: document.getElementById("upModelo").value.trim(),
+            imei: document.getElementById("upImei").value.trim(),
+            condicao: document.getElementById("upCondicao").value,
+            valor_abatido: custo, // vira o valor de custo do produto no estoque
+            preco_venda_sugerido: parseFloat(document.getElementById("upVenda").value) || 0,
+            observacoes: document.getElementById("upObs").value.trim() || null
+        };
+    }
+
+
+    
     // ENVIO DO PEDIDO — isso que faltava por completo
     document.getElementById("formNovoPedido").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -325,6 +371,10 @@ function adicionarLinha() {
                 observacoes: observacoes.trim() || null
             };
 
+            const troca = lerUpgrade();
+            if (troca === false) return;
+            if (troca) dados.troca = troca;
+
             let resultado;
             if (pedidoEditando) {
                 // EDIÇÃO: atualiza o pedido existente (mantém o valor da troca já registrado)
@@ -333,7 +383,7 @@ function adicionarLinha() {
                 alert(`Pedido #${pedidoEditando.id} atualizado com sucesso.`);
             } else {
                 resultado = await api.pedidos.criar(dados);
-                alert(`Pedido #${resultado.id} criado com sucesso.`);
+                alert(`Pedido #${resultado.id} criado com sucesso.` + (dados.troca ? "\nO aparelho do upgrade já entrou no estoque." : ""));
             }
             window.location.href = 'pedidos.html';
         } catch (err) {
@@ -392,9 +442,21 @@ function adicionarLinha() {
         } catch (err) {
             alert("Erro ao carregar o pedido para edição: " + err.message);
             window.location.href = "pedidos.html";
-        }
-    }
-
+        } 
+  // Upgrade já registrado: mostra os dados e trava os campos
+            if (pedido.trocas && pedido.trocas.length > 0) {
+                const t = pedido.trocas[0];
+                document.getElementById("upNome").value = t.produto_nome || "";
+                document.getElementById("upModelo").value = t.modelo || "";
+                document.getElementById("upImei").value = t.imei || "";
+                document.getElementById("upCusto").value = Number(t.valor_abatido).toFixed(2);
+                document.querySelectorAll("#abaUpgrade input, #abaUpgrade select, #abaUpgrade textarea")
+                    .forEach(el => el.disabled = true);
+                document.getElementById("avisoUpgrade").style.display = "block";
+                calcularTotais();
+            }
+   }
+    
     definirNumeroPedido();
     carregarEstoque();
     if (pedidoEditId) carregarPedidoParaEdicao(pedidoEditId);
