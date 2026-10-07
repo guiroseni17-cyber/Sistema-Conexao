@@ -24,6 +24,9 @@
         .sugestao-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
         .sugestao-item:hover { background-color: #f1f1f1; }
         .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; }
+        .abas { display: flex; gap: 6px; border-bottom: 2px solid #eaeaea; margin: 20px 0 5px; }
+        .aba { background: #f1f3f6; border: 1px solid #ddd; border-bottom: none; padding: 10px 24px; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: bold; color: #555; }
+        .aba.ativa { background: #1f4e79; color: #fff; border-color: #1f4e79; }  
     </style>
 </head>
 
@@ -80,6 +83,13 @@
             </div>
         </div>
 
+      <div class="abas">
+            <button type="button" class="aba ativa" data-aba="abaPedido">Pedido</button>
+            <button type="button" class="aba" data-aba="abaUpgrade">Upgrade</button>
+        </div>
+
+        <div id="abaPedido">
+            
         <h3>Produtos</h3>
         <!-- Tabela de Produtos com Autocomplete de Estoque -->
         <table id="tabelaProdutos">
@@ -113,6 +123,8 @@
             <div class="form-group"><label>Valor do frete</label><input type="text" id="totalFrete" value="0,00"></div>
             <div class="form-group"><label>Valor do desconto</label><input type="text" id="totalDesconto" value="0,00"></div>
             <div class="form-group"><label>Total Geral</label><input type="text" id="totalGeral" value="0,00" readonly style="font-weight:bold; color:#007bff;"></div>
+            <div class="form-group"><label>Abatido (upgrade)</label><input type="text" id="totalUpgrade" value="0,00" readonly></div>
+            <div class="form-group"><label>A pagar</label><input type="text" id="totalAPagar" value="0,00" readonly style="font-weight:bold; color:#28a745;"></div>         
         </div>
 
         <h3>Pagamento e Transporte</h3>
@@ -157,6 +169,65 @@
             <div class="form-group">
                 <label>Observações internas</label>
                 <textarea rows="3" placeholder="Apenas uso interno..."></textarea>
+            </div>
+        </div>
+
+                    </div> <!-- fim da aba Pedido -->
+
+        <div id="abaUpgrade" style="display: none;">
+            <h3>Aparelho recebido no upgrade</h3>
+            <p id="avisoUpgrade" style="display:none; background:#fff7e6; border:1px solid #f0d9a8; padding:10px; border-radius:6px; font-size:13px;">
+                Este aparelho já foi registrado no estoque ao salvar o pedido.
+            </p>
+            <p style="font-size: 13px; color: #666; margin-top: 0;">
+                O aparelho preenchido aqui entra no estoque automaticamente ao salvar o pedido, com o valor de custo informado.
+                Deixe o nome em branco se não houver upgrade.
+            </p>
+
+            <div class="form-row">
+                <div class="form-group" style="flex: 2;">
+                    <label for="upNome">Aparelho (nome) *</label>
+                    <input type="text" id="upNome" placeholder="Ex: iPhone 13 128GB Branco">
+                </div>
+                <div class="form-group">
+                    <label for="upMarca">Marca</label>
+                    <input type="text" id="upMarca" placeholder="Apple">
+                </div>
+                <div class="form-group">
+                    <label for="upModelo">Modelo</label>
+                    <input type="text" id="upModelo" placeholder="iPhone 13">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="upImei">IMEI</label>
+                    <input type="text" id="upImei" placeholder="IMEI do aparelho">
+                </div>
+                <div class="form-group">
+                    <label for="upCondicao">Condição</label>
+                    <select id="upCondicao">
+                        <option value="seminovo_excelente">Seminovo - excelente</option>
+                        <option value="seminovo_bom" selected>Seminovo - bom</option>
+                        <option value="seminovo_regular">Seminovo - regular</option>
+                        <option value="novo">Novo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="upCusto">Valor de custo (R$) *</label>
+                    <input type="number" id="upCusto" step="0.01" min="0" placeholder="Valor dado pelo aparelho">
+                </div>
+                <div class="form-group">
+                    <label for="upVenda">Preço de venda (R$)</label>
+                    <input type="number" id="upVenda" step="0.01" min="0" placeholder="Opcional">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="upObs">Observações do aparelho</label>
+                    <textarea id="upObs" rows="2" placeholder="Ex: bateria 69%, tela com riscos..."></textarea>
+                </div>
             </div>
         </div>
 
