@@ -1,8 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
     const tabela = document.querySelector("#tabelaProdutos tbody");
-       // Modo edição: novo-pedido.html?id=123
+    // Modo edição: novo-pedido.html?id=123
     const pedidoEditId = new URLSearchParams(window.location.search).get("id");
     let pedidoEditando = null; // guarda o pedido carregado quando estamos editando
+    let upgradeAtivo = false;  // true quando o cartão de upgrade está aberto
 
     // N° do pedido: o número real, igual ao da lista de pedidos
     async function definirNumeroPedido() {
@@ -36,10 +37,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const unit = parseFloat(row.querySelector(".prod-unit").value) || 0;
             const totalLinha = qtd * unit;
             row.querySelector(".prod-total").value = totalLinha.toFixed(2);
-            const temUpgrade = document.getElementById("upNome").value.trim() !== "";
-            const upgrade = temUpgrade ? (parseFloat(document.getElementById("upCusto").value) || 0) : 0;
-        document.getElementById("totalUpgrade").value = upgrade.toFixed(2);
-        document.getElementById("totalAPagar").value = (geral - upgrade).toFixed(2);
             somaProdutos += totalLinha;
         });
 
@@ -48,6 +45,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const desconto = parseFloat(document.getElementById("totalDesconto").value) || 0;
         const geral = somaProdutos + frete - desconto;
         document.getElementById("totalGeral").value = geral.toFixed(2);
+
+        const custoUpgrade = parseFloat(document.getElementById("upCusto").value) || 0;
+        const upgrade = upgradeAtivo ? custoUpgrade : 0;
+        const aPagar = geral - upgrade;
+        document.getElementById("totalUpgrade").value = upgrade.toFixed(2);
+        document.getElementById("totalAPagar").value = aPagar.toFixed(2);
+
+        // Resumo: quanto já foi lançado nas formas de pagamento
+        const lancado = Array.from(document.querySelectorAll(".pag-valor"))
+            .reduce((soma, el) => soma + (parseFloat(el.value) || 0), 0);
+        const falta = aPagar - lancado;
+        const resumo = document.getElementById("resumoPagamento");
+        if (resumo) {
+            const ok = Math.abs(falta) < 0.01;
+            resumo.innerHTML = `A pagar: <b>R$ ${aPagar.toFixed(2)}</b> · Lançado: <b>R$ ${lancado.toFixed(2)}</b> · ` +
+                (ok ? '<b style="color:#28a745;">Pagamento conferido ✔</b>'
+                    : `<b style="color:#dc3545;">${falta > 0 ? 'Falta' : 'Passou'} R$ ${Math.abs(falta).toFixed(2)}</b>`);
+        }
     }
 
     // Configurar busca de produtos no estoque por linha
@@ -106,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     configurarLinha(tabela.querySelector("tr"));
 
-function adicionarLinha() {
+    function adicionarLinha() {
         const novaLinha = document.createElement("tr");
         novaLinha.innerHTML = `
             <td style="position: relative;">
@@ -281,29 +296,46 @@ function adicionarLinha() {
         document.getElementById(id).addEventListener("input", calcularTotais);
     });
 
+    // UPGRADE (aparelho recebido como forma de pagamento)
+    const cardUpgrade = document.getElementById("cardUpgrade");
+    const btnAddUpgrade = document.getElementById("btnAddUpgrade");
 
-// ABAS (Pedido / Upgrade)
-    function trocarAba(id) {
-        document.querySelectorAll(".aba").forEach(b => b.classList.toggle("ativa", b.dataset.aba === id));
-        ["abaPedido", "abaUpgrade"].forEach(a => {
-            document.getElementById(a).style.display = (a === id ? "block" : "none");
-        });
+    function mostrarUpgrade(ativo) {
+        upgradeAtivo = ativo;
+        cardUpgrade.style.display = ativo ? "block" : "none";
+        btnAddUpgrade.style.display = ativo ? "none" : "inline-block";
+        if (!ativo) {
+            cardUpgrade.querySelectorAll("input, textarea").forEach(el => el.value = "");
+            document.getElementById("upCondicao").value = "seminovo_bom";
+        }
+        calcularTotais();
     }
-    document.querySelectorAll(".aba").forEach(b => b.addEventListener("click", () => trocarAba(b.dataset.aba)));
-    ["upNome", "upCusto"].forEach(id => document.getElementById(id).addEventListener("input", calcularTotais));
+
+    btnAddUpgrade.addEventListener("click", () => {
+        mostrarUpgrade(true);
+        document.getElementById("upNome").focus();
+    });
+    document.getElementById("btnRemoverUpgrade").addEventListener("click", () => mostrarUpgrade(false));
+    cardUpgrade.addEventListener("input", calcularTotais);
+    containerParcelas.addEventListener("input", calcularTotais);
+    qtdPagamentoInput.addEventListener("input", calcularTotais);
 
     // Lê o aparelho do upgrade. Retorna: null (sem upgrade), false (dados inválidos) ou o objeto da troca.
     function lerUpgrade() {
+        if (!upgradeAtivo) return null;
         // Se o pedido editado já tem upgrade registrado, não envia de novo
         if (pedidoEditando && pedidoEditando.trocas && pedidoEditando.trocas.length > 0) return null;
 
         const nome = document.getElementById("upNome").value.trim();
-        if (!nome) return null;
-
         const custo = parseFloat(document.getElementById("upCusto").value) || 0;
+
+        if (!nome) {
+            alert("Informe o nome do aparelho do upgrade.");
+            document.getElementById("upNome").focus();
+            return false;
+        }
         if (custo <= 0) {
-            alert("Informe o valor de custo do aparelho do upgrade.");
-            trocarAba("abaUpgrade");
+            alert("Informe o valor pago no aparelho do upgrade.");
             document.getElementById("upCusto").focus();
             return false;
         }
@@ -321,8 +353,6 @@ function adicionarLinha() {
         };
     }
 
-
-    
     // ENVIO DO PEDIDO — isso que faltava por completo
     document.getElementById("formNovoPedido").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -358,8 +388,7 @@ function adicionarLinha() {
 
         const frete = parseFloat(document.getElementById("totalFrete").value) || 0;
         const desconto = parseFloat(document.getElementById("totalDesconto").value) || 0;
-        const textareas = document.querySelectorAll('textarea');
-        let observacoes = textareas[0] ? textareas[0].value : '';
+        let observacoes = document.getElementById("obsPedido").value;
         if (frete > 0) observacoes += `\nFrete: R$ ${frete.toFixed(2)}`;
         if (desconto > 0) observacoes += `\nDesconto: R$ ${desconto.toFixed(2)}`;
 
@@ -421,7 +450,6 @@ function adicionarLinha() {
                 linha.querySelector(".prod-qtd").value = item.quantidade;
                 linha.querySelector(".prod-unit").value = Number(item.preco_unitario).toFixed(2);
             });
-            calcularTotais();
 
             // Pagamentos
             if (pedido.pagamentos && pedido.pagamentos.length > 0) {
@@ -437,27 +465,30 @@ function adicionarLinha() {
             }
 
             // Observações
-            const textareas = document.querySelectorAll("textarea");
-            if (textareas[0]) textareas[0].value = pedido.observacoes || "";
-        } catch (err) {
-            alert("Erro ao carregar o pedido para edição: " + err.message);
-            window.location.href = "pedidos.html";
-        } 
-  // Upgrade já registrado: mostra os dados e trava os campos
+            document.getElementById("obsPedido").value = pedido.observacoes || "";
+
+            // Upgrade já registrado: mostra os dados e trava os campos
             if (pedido.trocas && pedido.trocas.length > 0) {
                 const t = pedido.trocas[0];
+                mostrarUpgrade(true);
                 document.getElementById("upNome").value = t.produto_nome || "";
                 document.getElementById("upModelo").value = t.modelo || "";
                 document.getElementById("upImei").value = t.imei || "";
                 document.getElementById("upCusto").value = Number(t.valor_abatido).toFixed(2);
-                document.querySelectorAll("#abaUpgrade input, #abaUpgrade select, #abaUpgrade textarea")
-                    .forEach(el => el.disabled = true);
+                cardUpgrade.querySelectorAll("input, select, textarea").forEach(el => el.disabled = true);
+                document.getElementById("btnRemoverUpgrade").style.display = "none";
                 document.getElementById("avisoUpgrade").style.display = "block";
-                calcularTotais();
             }
-   }
-    
+
+            calcularTotais();
+        } catch (err) {
+            alert("Erro ao carregar o pedido para edição: " + err.message);
+            window.location.href = "pedidos.html";
+        }
+    }
+
     definirNumeroPedido();
     carregarEstoque();
     if (pedidoEditId) carregarPedidoParaEdicao(pedidoEditId);
+    calcularTotais();
 });
