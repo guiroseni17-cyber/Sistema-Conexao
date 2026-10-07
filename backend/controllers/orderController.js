@@ -9,6 +9,34 @@ function resumoFormasPagamento(pagamentos) {
         .join(' + ');
 }
 
+// Próximo número de pedido (o mesmo id que o pedido vai receber ao ser salvo)
+exports.proximoNumero = async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        let proximo = null;
+        try {
+            // No MySQL 8 essa informação fica em cache; zerar o cache deixa o número exato
+            await connection.query('SET SESSION information_schema_stats_expiry = 0');
+            const [rows] = await connection.query(
+                `SELECT AUTO_INCREMENT AS proximo FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedidos'`
+            );
+            proximo = rows[0] && rows[0].proximo;
+        } catch (e) {
+            proximo = null;
+        }
+        if (!proximo) {
+            const [[r]] = await connection.query('SELECT COALESCE(MAX(id), 0) + 1 AS proximo FROM pedidos');
+            proximo = r.proximo;
+        }
+        res.json({ proximo: Number(proximo) });
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao buscar próximo número', detalhe: err.message });
+    } finally {
+        connection.release();
+    }
+};
+
 // Listar pedidos (resumo, com nome do cliente e do vendedor)
 exports.listar = async (req, res) => {
     try {
@@ -267,7 +295,7 @@ exports.editar = async (req, res) => {
 
             valorTotal += item.quantidade * item.preco_unitario;
         }
-        
+
         // Histórico de estoque: registra só a diferença líquida por produto
         // (positivo = passou a vender mais, negativo = devolveu ao estoque)
         const saldo = {};
@@ -292,7 +320,6 @@ exports.editar = async (req, res) => {
             );
         }
 
-        
         let valorTrocaFinal = Number(valor_troca || 0);
 
         // Upgrade adicionado durante a edição (só se o pedido ainda não tinha troca)
@@ -328,7 +355,8 @@ exports.editar = async (req, res) => {
                  VALUES (?, 'entrada_troca', 1, ?, ?)`,
                 [produtoTrocaResult.insertId, `Troca no Pedido #${pedidoId}`, req.user?.id || null]
             );
-        }        const valorAPagar = valorTotal - valorTrocaFinal;
+        }
+        const valorAPagar = valorTotal - valorTrocaFinal;
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
         await connection.query(
@@ -439,34 +467,5 @@ exports.dashboard = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao carregar dashboard', detalhe: err.message });
-    }
-};
-
-
-// Próximo número de pedido (o mesmo id que o pedido vai receber ao ser salvo)
-exports.proximoNumero = async (req, res) => {
-    const connection = await db.getConnection();
-    try {
-        let proximo = null;
-        try {
-            // No MySQL 8 essa informação fica em cache; zerar o cache deixa o número exato
-            await connection.query('SET SESSION information_schema_stats_expiry = 0');
-            const [rows] = await connection.query(
-                `SELECT AUTO_INCREMENT AS proximo FROM information_schema.TABLES
-                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedidos'`
-            );
-            proximo = rows[0] && rows[0].proximo;
-        } catch (e) {
-            proximo = null;
-        }
-        if (!proximo) {
-            const [[r]] = await connection.query('SELECT COALESCE(MAX(id), 0) + 1 AS proximo FROM pedidos');
-            proximo = r.proximo;
-        }
-        res.json({ proximo: Number(proximo) });
-    } catch (err) {
-        res.status(500).json({ erro: 'Erro ao buscar próximo número', detalhe: err.message });
-    } finally {
-        connection.release();
     }
 };
