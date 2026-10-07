@@ -293,8 +293,42 @@ exports.editar = async (req, res) => {
         }
 
         
-        const valorTrocaFinal = Number(valor_troca || 0);
-        const valorAPagar = valorTotal - valorTrocaFinal;
+        let valorTrocaFinal = Number(valor_troca || 0);
+
+        // Upgrade adicionado durante a edição (só se o pedido ainda não tinha troca)
+        const { troca } = req.body;
+        const [trocasExistentes] = await connection.query(
+            'SELECT id FROM pedido_trocas WHERE pedido_id = ?', [pedidoId]
+        );
+        if (troca && troca.nome && trocasExistentes.length === 0) {
+            valorTrocaFinal = Number(troca.valor_abatido || 0);
+
+            const [produtoTrocaResult] = await connection.query(
+                `INSERT INTO produtos
+                    (nome, categoria, marca, modelo, imei, condicao, quantidade, preco_custo, preco_venda, origem, observacoes)
+                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 'troca', ?)`,
+                [
+                    troca.nome,
+                    troca.categoria || 'aparelho_seminovo',
+                    troca.marca || null,
+                    troca.modelo || null,
+                    troca.imei || null,
+                    troca.condicao || 'seminovo_bom',
+                    troca.valor_abatido || 0,
+                    troca.preco_venda_sugerido || 0,
+                    troca.observacoes || null
+                ]
+            );
+            await connection.query(
+                'INSERT INTO pedido_trocas (pedido_id, produto_id, valor_abatido) VALUES (?, ?, ?)',
+                [pedidoId, produtoTrocaResult.insertId, valorTrocaFinal]
+            );
+            await connection.query(
+                `INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, referencia, usuario_id)
+                 VALUES (?, 'entrada_troca', 1, ?, ?)`,
+                [produtoTrocaResult.insertId, `Troca no Pedido #${pedidoId}`, req.user?.id || null]
+            );
+        }        const valorAPagar = valorTotal - valorTrocaFinal;
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
         await connection.query(
