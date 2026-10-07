@@ -5,6 +5,7 @@ const path = require('path');
 require('dotenv').config();
 
 const db = require('./config/db');
+const { migrar } = require('./config/migrate');
 const { autenticar } = require('./middleware/auth');
 
 const authRoutes = require('./routes/auth');
@@ -68,5 +69,10 @@ async function garantirUsuarioAdmin() {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
     console.log(`FoneNinja rodando em http://localhost:${PORT}`);
+    try {
+        await migrar();
+    } catch (err) {
+        console.error('ERRO na migração do banco (o upgrade com IMEI 2/serial/bateria depende dela):', err.message);
+    }
     await garantirUsuarioAdmin();
 });
