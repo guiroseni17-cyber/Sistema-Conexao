@@ -22,7 +22,7 @@ exports.listar = async (req, res) => {
             sql += ' AND p.categoria = ?';
             params.push(categoria);
         }
-        sql += ' ORDER BY p.criado_em DESC';
+        sql += ' ORDER BY (p.quantidade > 0) DESC, p.criado_em DESC';
 
         const [rows] = await db.query(sql, params);
         res.json(rows);
@@ -81,6 +81,87 @@ exports.criar = async (req, res) => {
         res.status(201).json({ id: result.insertId, mensagem: 'Produto cadastrado com sucesso' });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao cadastrar produto', detalhe: err.message });
+    }
+};
+
+/**
+ * Cadastro em lote de variações (ex: iPhone 17 Pro Max 256GB Laranja, ...).
+ *
+ * Corpo esperado:
+ * {
+ *   nomes: ["iPhone 17 Pro Max 256GB Laranja", "iPhone 17 Pro Max 256GB Azul"],
+ *   categoria: "aparelho_novo", condicao: "novo", marca: "Apple",
+ *   modelo: "iPhone 17 Pro Max",   // produto pai
+ *   preco_venda: 0                 // opcional, vale para todos
+ * }
+ *
+ * Os produtos entram com estoque 0 (a quantidade chega pelas Compras) e
+ * estoque mínimo 0 (sem alerta). Nomes que já existem são ignorados.
+ */
+exports.criarLote = async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { nomes, categoria, condicao, marca, modelo, preco_venda } = req.body;
+
+        if (!Array.isArray(nomes) || nomes.length === 0) {
+            return res.status(400).json({ erro: 'Selecione ao menos uma variação para cadastrar' });
+        }
+        if (nomes.length > 500) {
+            return res.status(400).json({ erro: 'Máximo de 500 variações por vez' });
+        }
+
+        const categoriasOk = ['aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca'];
+        const condicoesOk = ['novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular'];
+        const cat = categoriasOk.includes(categoria) ? categoria : 'aparelho_novo';
+        const cond = condicoesOk.includes(condicao) ? condicao : 'novo';
+        const preco = Number(preco_venda) > 0 ? Number(preco_venda) : 0;
+
+        // Limpa e remove nomes repetidos dentro do próprio pedido
+        const vistos = new Set();
+        const limpos = [];
+        for (const n of nomes) {
+            const nome = String(n || '').trim();
+            if (!nome || nome.length > 150) continue;
+            const chave = nome.toLowerCase();
+            if (vistos.has(chave)) continue;
+            vistos.add(chave);
+            limpos.push(nome);
+        }
+        if (limpos.length === 0) {
+            return res.status(400).json({ erro: 'Nenhum nome de variação válido foi enviado' });
+        }
+
+        await connection.beginTransaction();
+
+        const [existentes] = await connection.query('SELECT nome FROM produtos WHERE ativo = TRUE');
+        const jaExiste = new Set(existentes.map(r => String(r.nome).trim().toLowerCase()));
+
+        const novos = limpos.filter(n => !jaExiste.has(n.toLowerCase()));
+        const ignorados = limpos.filter(n => jaExiste.has(n.toLowerCase()));
+
+        if (novos.length > 0) {
+            const linhas = novos.map(nome => [
+                nome, cat, marca || null, modelo || null, cond, 0, 0, 0, preco, 'compra'
+            ]);
+            await connection.query(
+                `INSERT INTO produtos
+                    (nome, categoria, marca, modelo, condicao, quantidade, estoque_minimo, preco_custo, preco_venda, origem)
+                 VALUES ?`,
+                [linhas]
+            );
+        }
+
+        await connection.commit();
+        res.status(201).json({
+            criados: novos.length,
+            ignorados,
+            mensagem: `${novos.length} produto(s) cadastrado(s)` + (ignorados.length ? `, ${ignorados.length} já existiam` : '')
+        });
+    } catch (err) {
+        await connection.rollback();
+        res.status(500).json({ erro: 'Erro ao cadastrar variações', detalhe: err.message });
+    } finally {
+        connection.release();
     }
 };
 
