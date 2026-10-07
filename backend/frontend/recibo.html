@@ -67,7 +67,12 @@
     /* Assinaturas */
     .rec-assinaturas { display: flex; gap: 40px; margin-top: 48px; }
     .rec-assinaturas div { flex: 1; border-top: 1px solid #888; text-align: center; padding-top: 4px; font-size: 10.5px; color: #666; }
-
+    /* Termo de garantia (texto fixo) */
+    #r-garantia { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--cor-borda); font-size: 9px; line-height: 1.4; color: #444; text-align: justify; }
+    #r-garantia h5 { margin: 0 0 6px; font-size: 10px; text-align: center; color: var(--cor-principal); }
+    #r-garantia h6 { margin: 8px 0 2px; font-size: 9.5px; color: var(--cor-principal); }
+    #r-garantia p { margin: 0 0 2px; }
+    
     .rec-acoes { text-align: center; margin-top: 20px; }
 
     @media (max-width: 640px) {
@@ -145,8 +150,9 @@
     <div class="rec-acoes">
         <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir recibo</button>
     </div>
-
+    
 <script src="js/api.js"></script>
+<script src="js/garantia.js"></script>
 <script src="js/recibo.js"></script>
 </body>
 </html>
