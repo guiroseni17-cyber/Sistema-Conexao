@@ -91,6 +91,26 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="panel" style="margin-top:20px;">
+                <div class="panel-header">
+                    <h3>Modelos base (ainda sem estoque)</h3>
+                    <span class="text-muted" style="font-size:12.5px;">Só entram no estoque quando você dá entrada com o valor de custo</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Modelo</th>
+                            <th>Categoria</th>
+                            <th class="text-right">Preço venda sugerido</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-modelos">
+                        <tr><td colspan="4" class="text-muted">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -171,12 +191,12 @@
 <div id="modal-variacoes" style="display:none; position:fixed; inset:0; background:rgba(18,23,43,0.45); align-items:center; justify-content:center; z-index:50;">
     <div style="background:#fff; border-radius:8px; width:720px; max-width:96vw; max-height:92vh; overflow-y:auto; padding:24px;">
         <div class="flex-between" style="margin-bottom:6px;">
-            <h3 style="font-size:16px;">Cadastrar produto com variações</h3>
+            <h3 style="font-size:16px;">Cadastrar modelos base (produto com variações)</h3>
             <span style="cursor:pointer; color:#6B7080;" onclick="fecharModalVariacoes()">✕</span>
         </div>
         <p class="text-muted" style="font-size:12.5px; margin:0 0 16px;">
             Informe o produto pai e os atributos (ex: Armazenamento e Cor). O sistema gera todas as combinações e você escolhe quais cadastrar.
-            Elas entram com estoque 0 (sem alerta de estoque mínimo); a quantidade chega pelas Compras.
+            Elas ficam salvas como <b>modelos base</b>: não entram no estoque nem aparecem na venda. Só viram produto quando você der entrada em uma Compra informando o valor de custo.
         </p>
 
         <div class="form-grid">

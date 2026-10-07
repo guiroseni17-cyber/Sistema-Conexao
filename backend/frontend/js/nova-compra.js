@@ -1,12 +1,20 @@
 let produtosExistentes = [];
+let modelosBase = [];
 let contadorItensCompra = 0;
 
 async function inicializarCompra() {
     await recarregarFornecedores();
 
     produtosExistentes = await api.produtos.listar('?busca=');
+    modelosBase = await api.modelos.listar();
 
-    adicionarItemCompra();
+    // Vindo do botão "Dar entrada" na tela de Estoque: já abre com o modelo escolhido
+    const modeloUrl = new URLSearchParams(window.location.search).get('modelo');
+    if (modeloUrl && modelosBase.some(m => String(m.id) === modeloUrl)) {
+        adicionarItemCompra('modelo', modeloUrl);
+    } else {
+        adicionarItemCompra();
+    }
     calcularResumoCompra();
 }
 
@@ -53,7 +61,13 @@ function opcoesProdutos() {
     ).join('');
 }
 
-function adicionarItemCompra() {
+function opcoesModelos() {
+    return modelosBase.map(m =>
+        `<option value="${m.id}" data-venda="${m.preco_venda}">${esc(m.nome)}</option>`
+    ).join('');
+}
+
+function adicionarItemCompra(tipoInicial, modeloId) {
     contadorItensCompra++;
     const id = contadorItensCompra;
     const container = document.getElementById('itens-compra-container');
@@ -66,6 +80,7 @@ function adicionarItemCompra() {
         <div class="panel-header">
             <select id="item-tipo-${id}" onchange="alternarTipoItemCompra(${id})" style="width:230px;">
                 <option value="existente">Reposição de produto existente</option>
+                <option value="modelo">Modelo base (variação cadastrada)</option>
                 <option value="novo">Produto novo (ainda não está no estoque)</option>
             </select>
             <button type="button" class="remove-item" onclick="removerItemCompra(${id})" title="Remover item">✕</button>
@@ -78,6 +93,26 @@ function adicionarItemCompra() {
                         <option value="">Selecione...</option>
                         ${opcoesProdutos()}
                     </select>
+                </div>
+            </div>
+            <div id="item-modelo-${id}" style="display:none;">
+                <div class="form-group full">
+                    <label>Modelo base</label>
+                    <select id="item-modelo-sel-${id}" onchange="preencherModelo(${id})">
+                        <option value="">Selecione...</option>
+                        ${opcoesModelos()}
+                    </select>
+                    <span class="text-muted" style="font-size:12px;">O modelo só entra no estoque ao salvar esta compra, e o custo unitário é obrigatório.</span>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>IMEI (opcional — se informar, a quantidade é 1)</label>
+                        <input type="text" id="item-modelo-imei-${id}">
+                    </div>
+                    <div class="form-group">
+                        <label>Preço de venda (R$)</label>
+                        <input type="number" id="item-modelo-venda-${id}" step="0.01" value="0">
+                    </div>
                 </div>
             </div>
             <div id="item-novo-${id}" style="display:none;">
@@ -135,11 +170,29 @@ function adicionarItemCompra() {
         </div>
     `;
     container.appendChild(bloco);
+
+    if (tipoInicial === 'modelo') {
+        document.getElementById(`item-tipo-${id}`).value = 'modelo';
+        alternarTipoItemCompra(id);
+        if (modeloId) {
+            document.getElementById(`item-modelo-sel-${id}`).value = modeloId;
+            preencherModelo(id);
+        }
+    }
+}
+
+function preencherModelo(id) {
+    const sel = document.getElementById(`item-modelo-sel-${id}`);
+    const venda = sel.selectedOptions[0]?.dataset.venda || 0;
+    document.getElementById(`item-modelo-venda-${id}`).value = venda;
+    document.getElementById(`item-custo-${id}`).value = 0;
+    calcularResumoCompra();
 }
 
 function alternarTipoItemCompra(id) {
     const tipo = document.getElementById(`item-tipo-${id}`).value;
     document.getElementById(`item-existente-${id}`).style.display = tipo === 'existente' ? 'block' : 'none';
+    document.getElementById(`item-modelo-${id}`).style.display = tipo === 'modelo' ? 'block' : 'none';
     document.getElementById(`item-novo-${id}`).style.display = tipo === 'novo' ? 'block' : 'none';
 }
 
@@ -165,7 +218,19 @@ function coletarItensCompra() {
         const quantidade = Number(document.getElementById(`item-qtd-${id}`).value);
         const preco_custo_unitario = Number(document.getElementById(`item-custo-${id}`).value);
 
-        if (tipo === 'existente') {
+        if (tipo === 'modelo') {
+            const modeloId = document.getElementById(`item-modelo-sel-${id}`).value;
+            if (modeloId) {
+                const imei = document.getElementById(`item-modelo-imei-${id}`).value.trim();
+                itens.push({
+                    modelo_base_id: Number(modeloId),
+                    imei: imei || null,
+                    preco_venda: Number(document.getElementById(`item-modelo-venda-${id}`).value || 0),
+                    quantidade: imei ? 1 : quantidade,
+                    preco_custo_unitario
+                });
+            }
+        } else if (tipo === 'existente') {
             const produtoId = document.getElementById(`item-produto-${id}`).value;
             if (produtoId) {
                 itens.push({ produto_id: Number(produtoId), quantidade, preco_custo_unitario });
@@ -206,6 +271,12 @@ document.getElementById('form-compra').addEventListener('submit', async (e) => {
     const itens = coletarItensCompra();
     if (itens.length === 0) {
         alert('Adicione ao menos um item recebido.');
+        return;
+    }
+
+    const semCusto = itens.find(i => i.modelo_base_id && !(i.preco_custo_unitario > 0));
+    if (semCusto) {
+        alert('Informe o custo unitário de todos os modelos base. Sem custo, eles não entram no estoque.');
         return;
     }
 

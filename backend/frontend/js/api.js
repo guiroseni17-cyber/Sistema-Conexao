@@ -56,9 +56,13 @@ const api = {
         buscar: (id) => apiRequest(`/produtos/${id}`),
         historico: (id) => apiRequest(`/produtos/${id}/historico`),
         criar: (dados) => apiRequest('/produtos', { method: 'POST', body: JSON.stringify(dados) }),
-        criarLote: (dados) => apiRequest('/produtos/lote', { method: 'POST', body: JSON.stringify(dados) }),
         editar: (id, dados) => apiRequest(`/produtos/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
         remover: (id) => apiRequest(`/produtos/${id}`, { method: 'DELETE' })
+    },
+    modelos: {
+        listar: (params = '') => apiRequest(`/modelos${params}`),
+        criarLote: (dados) => apiRequest('/modelos/lote', { method: 'POST', body: JSON.stringify(dados) }),
+        remover: (id) => apiRequest(`/modelos/${id}`, { method: 'DELETE' })
     },
     clientes: {
         listar: (params = '') => apiRequest(`/clientes${params}`),

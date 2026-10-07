@@ -55,6 +55,9 @@ exports.buscarPorId = async (req, res) => {
  *   ]
  * }
  *
+ * Itens de MODELO BASE (variações): { modelo_base_id: 7, quantidade, preco_custo_unitario (obrigatório > 0),
+ *   imei (opcional), preco_venda (opcional) } — o produto só passa a existir no estoque aqui.
+ *
  * Cada item já entra direto no estoque (soma quantidade se o produto existe,
  * cria se não existe) e fica registrado no histórico de movimentações.
  */
@@ -68,6 +71,20 @@ exports.criar = async (req, res) => {
         if (!fornecedor_id || !itens || itens.length === 0) {
             await connection.rollback();
             return res.status(400).json({ erro: 'Fornecedor e ao menos um item comprado são obrigatórios' });
+        }
+
+        // Modelo base só vira estoque com custo informado
+        for (const item of itens) {
+            if (item.modelo_base_id) {
+                if (!(Number(item.preco_custo_unitario) > 0)) {
+                    await connection.rollback();
+                    return res.status(400).json({ erro: 'Informe o valor de custo (maior que zero) para dar entrada em um modelo base' });
+                }
+                if (!(Number(item.quantidade) > 0)) {
+                    await connection.rollback();
+                    return res.status(400).json({ erro: 'Informe a quantidade recebida do modelo base' });
+                }
+            }
         }
 
         let valorTotal = 0;
@@ -89,7 +106,55 @@ exports.criar = async (req, res) => {
             const quantidade = Number(item.quantidade);
             const precoCusto = Number(item.preco_custo_unitario);
 
-            if (produtoId) {
+            if (item.modelo_base_id) {
+                // Entrada de um MODELO BASE: é aqui que ele vira produto de verdade no estoque.
+                const [modelos] = await connection.query(
+                    'SELECT * FROM modelos_base WHERE id = ? AND ativo = TRUE', [item.modelo_base_id]
+                );
+                if (modelos.length === 0) {
+                    throw new Error(`Modelo base id ${item.modelo_base_id} não encontrado`);
+                }
+                const m = modelos[0];
+                const imei = item.imei ? String(item.imei).trim() : null;
+
+                if (imei) {
+                    // Aparelho com IMEI é unidade única
+                    if (quantidade !== 1) {
+                        throw new Error('Item com IMEI deve ter quantidade 1');
+                    }
+                    const [dup] = await connection.query(
+                        'SELECT id FROM produtos WHERE imei = ? AND ativo = TRUE', [imei]
+                    );
+                    if (dup.length > 0) {
+                        throw new Error(`Já existe um produto ativo com o IMEI ${imei}`);
+                    }
+                }
+
+                // Sem IMEI: se esse modelo já virou produto antes, só repõe a quantidade
+                let existente = [];
+                if (!imei) {
+                    [existente] = await connection.query(
+                        'SELECT id FROM produtos WHERE modelo_base_id = ? AND ativo = TRUE AND imei IS NULL ORDER BY id LIMIT 1 FOR UPDATE',
+                        [m.id]
+                    );
+                }
+
+                if (existente.length > 0) {
+                    produtoId = existente[0].id;
+                    await connection.query(
+                        'UPDATE produtos SET quantidade = quantidade + ?, preco_custo = ? WHERE id = ?',
+                        [quantidade, precoCusto, produtoId]
+                    );
+                } else {
+                    const precoVenda = Number(item.preco_venda) > 0 ? Number(item.preco_venda) : Number(m.preco_venda || 0);
+                    const [novoProduto] = await connection.query(
+                        `INSERT INTO produtos (nome, categoria, marca, modelo, imei, condicao, quantidade, estoque_minimo, preco_custo, preco_venda, origem, modelo_base_id)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'compra', ?)`,
+                        [m.nome, m.categoria, m.marca, m.modelo, imei, m.condicao, quantidade, precoCusto, precoVenda, m.id]
+                    );
+                    produtoId = novoProduto.insertId;
+                }
+            } else if (produtoId) {
                 // Repondo um produto que já existe: soma a quantidade e
                 // atualiza o custo para o valor mais recente pago.
                 const [existe] = await connection.query(

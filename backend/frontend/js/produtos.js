@@ -49,6 +49,39 @@ async function carregarProdutos() {
     }
 }
 
+async function carregarModelos() {
+    const tabela = document.getElementById('tabela-modelos');
+    const busca = document.getElementById('busca').value;
+    try {
+        const modelos = await api.modelos.listar(busca ? `?busca=${encodeURIComponent(busca)}` : '');
+        tabela.innerHTML = modelos.length ? modelos.map(m => `
+            <tr>
+                <td><strong>${esc(m.nome)}</strong>${m.modelo ? `<div class="text-muted" style="font-size:12px;">${esc(m.modelo)}</div>` : ''}</td>
+                <td>${rotulosCategoria[m.categoria] || m.categoria}</td>
+                <td class="text-right">${Number(m.preco_venda) > 0 ? formatarMoeda(m.preco_venda) : '-'}</td>
+                <td class="text-right">
+                    <div class="row-actions">
+                        <a class="btn btn-primary btn-sm" href="nova-compra.html?modelo=${m.id}">Dar entrada</a>
+                        <button class="btn btn-secondary btn-sm" data-nome="${esc(m.nome)}" onclick="removerModelo(${m.id}, this.dataset.nome)">Remover</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('') : '<tr><td colspan="4" class="empty-state">Nenhum modelo base cadastrado</td></tr>';
+    } catch (err) {
+        tabela.innerHTML = `<tr><td colspan="4" class="text-muted">Erro ao carregar: ${err.message}</td></tr>`;
+    }
+}
+
+async function removerModelo(id, nome) {
+    if (!confirm(`Remover o modelo base "${nome}"? Produtos que já entraram no estoque a partir dele não são afetados.`)) return;
+    try {
+        await api.modelos.remover(id);
+        carregarModelos();
+    } catch (err) {
+        alert('Erro ao remover modelo: ' + err.message);
+    }
+}
+
 function abrirModalProduto() {
     document.getElementById('form-produto').reset();
     delete document.getElementById('form-produto').dataset.editId;
@@ -133,7 +166,7 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
     }
 });
 
-document.getElementById('busca').addEventListener('input', debounce(carregarProdutos, 300));
+document.getElementById('busca').addEventListener('input', debounce(() => { carregarProdutos(); carregarModelos(); }, 300));
 document.getElementById('filtro-categoria').addEventListener('change', carregarProdutos);
 document.getElementById('filtro-estoque').addEventListener('change', carregarProdutos);
 
@@ -174,8 +207,8 @@ async function abrirModalVariacoes() {
     renderizarAtributos();
     renderizarVariacoes();
     try {
-        const todos = await api.produtos.listar();
-        varExistentes = new Set(todos.map(p => String(p.nome).trim().toLowerCase()));
+        const [produtos, modelos] = await Promise.all([api.produtos.listar(), api.modelos.listar()]);
+        varExistentes = new Set([...produtos, ...modelos].map(p => String(p.nome).trim().toLowerCase()));
         renderizarVariacoes();
     } catch (err) {
         console.error('Não foi possível checar produtos já cadastrados:', err);
@@ -326,9 +359,9 @@ function variacoesSelecionadas() {
 function atualizarResumoVariacoes() {
     const todas = gerarNomesVariacoes();
     const selecionadas = variacoesSelecionadas();
-    document.getElementById('v-resumo').textContent = `${todas.length} produtos - ${selecionadas.length} selecionados`;
+    document.getElementById('v-resumo').textContent = `${todas.length} variações - ${selecionadas.length} selecionadas`;
     const btn = document.getElementById('v-salvar');
-    btn.textContent = selecionadas.length ? `Cadastrar ${selecionadas.length} produto${selecionadas.length === 1 ? '' : 's'}` : 'Cadastrar';
+    btn.textContent = selecionadas.length ? `Cadastrar ${selecionadas.length} modelo${selecionadas.length === 1 ? '' : 's'} base` : 'Cadastrar';
     btn.disabled = selecionadas.length === 0 || selecionadas.length > VAR_MAX;
 }
 
@@ -382,7 +415,7 @@ document.getElementById('v-salvar').addEventListener('click', async () => {
     const btn = document.getElementById('v-salvar');
     btn.disabled = true;
     try {
-        const r = await api.produtos.criarLote({
+        const r = await api.modelos.criarLote({
             nomes,
             categoria: document.getElementById('v-categoria').value,
             condicao: document.getElementById('v-condicao').value,
@@ -391,7 +424,7 @@ document.getElementById('v-salvar').addEventListener('click', async () => {
             preco_venda: Number(document.getElementById('v-venda').value) || 0
         });
         fecharModalVariacoes();
-        carregarProdutos();
+        carregarModelos();
         alert(r.mensagem);
     } catch (err) {
         alert('Erro ao cadastrar variações: ' + err.message);
@@ -400,3 +433,4 @@ document.getElementById('v-salvar').addEventListener('click', async () => {
 });
 
 carregarProdutos();
+carregarModelos();

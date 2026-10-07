@@ -11,6 +11,7 @@ const { autenticar } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const productRoutes = require('./routes/products');
+const modelRoutes = require('./routes/models');
 const clientRoutes = require('./routes/clients');
 const orderRoutes = require('./routes/orders');
 const supplierRoutes = require('./routes/suppliers');
@@ -33,6 +34,7 @@ app.use('/api', autenticar);
 
 app.use('/api/usuarios', userRoutes);
 app.use('/api/produtos', productRoutes);
+app.use('/api/modelos', modelRoutes);
 app.use('/api/clientes', clientRoutes);
 app.use('/api/pedidos', orderRoutes);
 app.use('/api/fornecedores', supplierRoutes);
