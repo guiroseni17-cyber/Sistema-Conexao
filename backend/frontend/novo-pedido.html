@@ -24,42 +24,19 @@
         .sugestao-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
         .sugestao-item:hover { background-color: #f1f1f1; }
         .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px; }
-        .abas { display: flex; gap: 6px; border-bottom: 2px solid #eaeaea; margin: 20px 0 5px; }
-        .aba { background: #f1f3f6; border: 1px solid #ddd; border-bottom: none; padding: 10px 24px; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: bold; color: #555; }
-        .aba.ativa { background: #1f4e79; color: #fff; border-color: #1f4e79; }  
+        .btn-upgrade { background: #fff; border: 2px dashed #1f4e79; color: #1f4e79; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-upgrade:hover { background: #eef5fc; }
+        .upgrade-card { border: 1px solid #cfe0f1; background: #f5f9fd; border-radius: 10px; padding: 16px 18px; margin-top: 10px; }
+        .upgrade-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .upgrade-topo strong { display: block; color: #1f4e79; font-size: 15px; }
+        .upgrade-topo span { font-size: 12px; color: #666; }
+        .btn-remover-upgrade { background: none; border: 1px solid #dc3545; color: #dc3545; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 12px; }
+        .upgrade-card .destaque input { border: 2px solid #28a745; font-weight: bold; }
+        .upgrade-dica { font-size: 12px; color: #666; margin: 4px 0 0; }
+        #resumoPagamento { font-size: 13px; margin-top: 10px; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; }
     </style>
 </head>
-
-    <style>
-    #modalCliente > div {
-        width: 760px !important;
-        max-width: 95% !important;
-        max-height: 90vh;
-        overflow-y: auto;
-        padding: 18px 22px !important;
-        margin: 0 !important;
-    }
-    #modalCliente form .form-row {
-        display: flex !important;
-        gap: 10px !important;
-        margin-bottom: 8px !important;
-    }
-    #modalCliente .form-group {
-        margin-bottom: 0 !important;
-        gap: 3px;
-    }
-    #modalCliente input,
-    #modalCliente select {
-        padding: 6px 8px !important;
-        font-size: 13px;
-    }
-    #modalCliente fieldset {
-        padding: 10px 12px !important;
-        margin-bottom: 12px !important;
-    }
-</style>
-    
-    <body>
+<body>
 
 <div class="container">
     <h2>Novo Pedido de Venda</h2>
@@ -83,13 +60,6 @@
             </div>
         </div>
 
-      <div class="abas">
-            <button type="button" class="aba ativa" data-aba="abaPedido">Pedido</button>
-            <button type="button" class="aba" data-aba="abaUpgrade">Upgrade</button>
-        </div>
-
-        <div id="abaPedido">
-            
         <h3>Produtos</h3>
         <!-- Tabela de Produtos com Autocomplete de Estoque -->
         <table id="tabelaProdutos">
@@ -124,7 +94,7 @@
             <div class="form-group"><label>Valor do desconto</label><input type="text" id="totalDesconto" value="0,00"></div>
             <div class="form-group"><label>Total Geral</label><input type="text" id="totalGeral" value="0,00" readonly style="font-weight:bold; color:#007bff;"></div>
             <div class="form-group"><label>Abatido (upgrade)</label><input type="text" id="totalUpgrade" value="0,00" readonly></div>
-            <div class="form-group"><label>A pagar</label><input type="text" id="totalAPagar" value="0,00" readonly style="font-weight:bold; color:#28a745;"></div>         
+            <div class="form-group"><label>A pagar</label><input type="text" id="totalAPagar" value="0,00" readonly style="font-weight:bold; color:#28a745;"></div>
         </div>
 
         <h3>Pagamento e Transporte</h3>
@@ -149,6 +119,71 @@
             </div>
         </div>
 
+        <div style="margin-bottom: 15px;">
+            <button type="button" id="btnAddUpgrade" class="btn-upgrade">📱 + Aparelho na troca (Upgrade)</button>
+
+            <div id="cardUpgrade" class="upgrade-card" style="display: none;">
+                <div class="upgrade-topo">
+                    <div>
+                        <strong>Upgrade</strong>
+                        <span>Aparelho recebido como forma de pagamento</span>
+                    </div>
+                    <button type="button" id="btnRemoverUpgrade" class="btn-remover-upgrade">Remover</button>
+                </div>
+
+                <p id="avisoUpgrade" style="display:none; background:#fff7e6; border:1px solid #f0d9a8; padding:8px 10px; border-radius:6px; font-size:12.5px;">
+                    Este aparelho já foi registrado no estoque ao salvar o pedido.
+                </p>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label for="upNome">Aparelho *</label>
+                        <input type="text" id="upNome" placeholder="Ex: iPhone 13 128GB Branco">
+                    </div>
+                    <div class="form-group">
+                        <label for="upMarca">Marca</label>
+                        <input type="text" id="upMarca" placeholder="Apple">
+                    </div>
+                    <div class="form-group">
+                        <label for="upModelo">Modelo</label>
+                        <input type="text" id="upModelo" placeholder="iPhone 13">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="upImei">IMEI</label>
+                        <input type="text" id="upImei" placeholder="IMEI do aparelho">
+                    </div>
+                    <div class="form-group">
+                        <label for="upCondicao">Condição</label>
+                        <select id="upCondicao">
+                            <option value="seminovo_excelente">Seminovo - excelente</option>
+                            <option value="seminovo_bom" selected>Seminovo - bom</option>
+                            <option value="seminovo_regular">Seminovo - regular</option>
+                            <option value="novo">Novo</option>
+                        </select>
+                    </div>
+                    <div class="form-group destaque">
+                        <label for="upCusto">Valor pago no aparelho (R$) *</label>
+                        <input type="number" id="upCusto" step="0.01" min="0" placeholder="0,00">
+                        <p class="upgrade-dica">Abate do pedido e vira o custo no estoque.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="upVenda">Preço de venda (R$)</label>
+                        <input type="number" id="upVenda" step="0.01" min="0" placeholder="Opcional">
+                    </div>
+                </div>
+
+                <div class="form-group" style="min-width: 100%;">
+                    <label for="upObs">Observações do aparelho</label>
+                    <textarea id="upObs" rows="2" placeholder="Ex: bateria 69%, tela com riscos..."></textarea>
+                </div>
+            </div>
+
+            <div id="resumoPagamento"></div>
+        </div>
+
         <div class="form-row">
             <div class="form-group">
                 <label>Modalidade de frete</label>
@@ -164,70 +199,11 @@
         <div class="form-row">
             <div class="form-group">
                 <label>Observações (impressas na nota)</label>
-                <textarea rows="3" placeholder="Informação visível para o cliente..."></textarea>
+                <textarea id="obsPedido" rows="3" placeholder="Informação visível para o cliente..."></textarea>
             </div>
             <div class="form-group">
                 <label>Observações internas</label>
                 <textarea rows="3" placeholder="Apenas uso interno..."></textarea>
-            </div>
-        </div>
-
-                    </div> <!-- fim da aba Pedido -->
-
-        <div id="abaUpgrade" style="display: none;">
-            <h3>Aparelho recebido no upgrade</h3>
-            <p id="avisoUpgrade" style="display:none; background:#fff7e6; border:1px solid #f0d9a8; padding:10px; border-radius:6px; font-size:13px;">
-                Este aparelho já foi registrado no estoque ao salvar o pedido.
-            </p>
-            <p style="font-size: 13px; color: #666; margin-top: 0;">
-                O aparelho preenchido aqui entra no estoque automaticamente ao salvar o pedido, com o valor de custo informado.
-                Deixe o nome em branco se não houver upgrade.
-            </p>
-
-            <div class="form-row">
-                <div class="form-group" style="flex: 2;">
-                    <label for="upNome">Aparelho (nome) *</label>
-                    <input type="text" id="upNome" placeholder="Ex: iPhone 13 128GB Branco">
-                </div>
-                <div class="form-group">
-                    <label for="upMarca">Marca</label>
-                    <input type="text" id="upMarca" placeholder="Apple">
-                </div>
-                <div class="form-group">
-                    <label for="upModelo">Modelo</label>
-                    <input type="text" id="upModelo" placeholder="iPhone 13">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="upImei">IMEI</label>
-                    <input type="text" id="upImei" placeholder="IMEI do aparelho">
-                </div>
-                <div class="form-group">
-                    <label for="upCondicao">Condição</label>
-                    <select id="upCondicao">
-                        <option value="seminovo_excelente">Seminovo - excelente</option>
-                        <option value="seminovo_bom" selected>Seminovo - bom</option>
-                        <option value="seminovo_regular">Seminovo - regular</option>
-                        <option value="novo">Novo</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="upCusto">Valor de custo (R$) *</label>
-                    <input type="number" id="upCusto" step="0.01" min="0" placeholder="Valor dado pelo aparelho">
-                </div>
-                <div class="form-group">
-                    <label for="upVenda">Preço de venda (R$)</label>
-                    <input type="number" id="upVenda" step="0.01" min="0" placeholder="Opcional">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="upObs">Observações do aparelho</label>
-                    <textarea id="upObs" rows="2" placeholder="Ex: bateria 69%, tela com riscos..."></textarea>
-                </div>
             </div>
         </div>
 
@@ -353,6 +329,35 @@
         </form>
     </div>
 </div>
+
+<style>
+    #modalCliente > div {
+        width: 760px !important;
+        max-width: 95% !important;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 18px 22px !important;
+        margin: 0 !important;
+    }
+    #modalCliente form .form-row {
+        display: flex !important;
+        gap: 10px !important;
+        margin-bottom: 8px !important;
+    }
+    #modalCliente .form-group {
+        margin-bottom: 0 !important;
+        gap: 3px;
+    }
+    #modalCliente input,
+    #modalCliente select {
+        padding: 6px 8px !important;
+        font-size: 13px;
+    }
+    #modalCliente fieldset {
+        padding: 10px 12px !important;
+        margin-bottom: 12px !important;
+    }
+</style>
 
 <script src="js/api.js"></script>
 <script src="js/novo-pedido.js"></script>
