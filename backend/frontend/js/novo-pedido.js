@@ -20,7 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    let produtosEstoque = []; // vem da API real (/api/produtos)
+   let produtosEstoque = []; // vem da API real (/api/produtos)
+    let catalogoPais = [];    // variações dos produtos pai (/api/modelos) — só referência, não é estoque
     async function carregarEstoque() {
         try {
             produtosEstoque = await api.produtos.listar('?busca=');
@@ -28,8 +29,13 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error('Erro ao carregar estoque:', err);
             alert('Não foi possível carregar o estoque. Recarregue a página.');
         }
+        try {
+            catalogoPais = await api.modelos.listar();
+        } catch (err) {
+            console.error('Erro ao carregar produtos pai:', err);
+        }
     }
-
+    
     function calcularTotais() {
         let somaProdutos = 0;
         document.querySelectorAll("#tabelaProdutos tbody tr").forEach(row => {
@@ -328,15 +334,25 @@ document.addEventListener("DOMContentLoaded", () => {
         upSelecionado.style.display = etapa === "dados" ? "block" : "none";
     }
 
-    // Catálogo = aparelhos já cadastrados no estoque (um por título, sem repetir)
+  // Catálogo do upgrade = variações dos PRODUTOS PAI (referência). Não é o estoque:
+    // o que for escolhido aqui serve de base para cadastrar o produto real no estoque.
     function catalogoUpgrade() {
-        const vistos = new Map();
-        produtosEstoque.forEach(p => {
-            if (p.categoria !== "aparelho_novo" && p.categoria !== "aparelho_seminovo") return;
-            const chave = [p.nome, p.marca, p.modelo, p.condicao].map(x => (x || "").toLowerCase()).join("|");
-            if (!vistos.has(chave)) vistos.set(chave, p);
-        });
-        return Array.from(vistos.values());
+        return catalogoPais
+            .filter(m => m.categoria === "aparelho_novo" || m.categoria === "aparelho_seminovo")
+            .map(m => {
+                const nome = String(m.nome || "").toLowerCase();
+                // O estado do aparelho recebido vem do próprio nome da variação (Seminovo / Lacrado)
+                let condicao = m.condicao || "seminovo_bom";
+                if (nome.includes("seminovo")) condicao = condicao.startsWith("seminovo") ? condicao : "seminovo_bom";
+                else if (nome.includes("lacrado")) condicao = "novo";
+                return {
+                    nome: m.nome,
+                    marca: m.marca,
+                    modelo: m.modelo || m.pai_nome,
+                    categoria: condicao === "novo" ? "aparelho_novo" : "aparelho_seminovo",
+                    condicao
+                };
+            });
     }
 
     function renderizarListaUpgrade() {
