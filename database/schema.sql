@@ -2,8 +2,6 @@
 -- FoneNinja - Schema do Banco de Dados
 -- ============================================
 
-CREATE DATABASE IF NOT EXISTS foneninja CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE foneninja;
 
 -- ---------------------------------------------
 -- Usuários (equipe da loja)
