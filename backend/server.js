@@ -66,13 +66,14 @@ async function garantirUsuarioAdmin() {
             console.log('====================================================');
         }
     } catch (err) {
-        console.error('Aviso: não foi possível checar/criar o usuário admin automaticamente:', err.message);
+        console.error('Aviso: não foi possível checar/criar o usuário admin automaticamente:', err.code || err.message || err);
     }
 }
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
-    console.log(`FoneNinja rodando em http://localhost:${PORT}`);
+    console.log(`FoneNinja rodando em http://localhost:${PORT}`);     
+    console.log('Banco de dados:', process.env.DB_HOST ? `${process.env.DB_HOST}:${process.env.DB_PORT}` : 'DB_HOST NÃO DEFINIDO (usando localhost)');
     try {
         await migrar();
     } catch (err) {
