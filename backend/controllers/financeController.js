@@ -17,6 +17,7 @@ function numero(v) {
 /**
  * Lucro real do período:
  *   receita das vendas (já com frete e desconto)
+ *   + juros/acréscimo que o cliente pagou a mais (ex.: parcelado no cartão: pagou 5.124 numa venda de 4.500)
  *   - custo das mercadorias vendidas
  *   - taxas de pagamento (valor da venda - valor que realmente caiu, só das vendas conciliadas)
  *   - despesas lançadas
@@ -39,6 +40,18 @@ exports.resumo = async (req, res) => {
             JOIN pedidos pd ON pd.id = pi.pedido_id
             JOIN produtos pr ON pr.id = pi.produto_id
             WHERE pd.status != 'cancelado' AND DATE(pd.criado_em) BETWEEN ? AND ?
+        `, [p.inicio, p.fim]);
+
+        // Quanto o cliente pagou a mais que o valor da venda (juros do parcelamento, etc.), por pedido
+        const [[acr]] = await db.query(`
+            SELECT COALESCE(SUM(GREATEST(0, t.pago - (t.valor_total - t.valor_troca))), 0) AS acrescimos
+            FROM (
+                SELECT pd.id, pd.valor_total, pd.valor_troca, COALESCE(SUM(pp.valor), 0) AS pago
+                FROM pedidos pd
+                LEFT JOIN pedido_pagamentos pp ON pp.pedido_id = pd.id
+                WHERE pd.status != 'cancelado' AND DATE(pd.criado_em) BETWEEN ? AND ?
+                GROUP BY pd.id, pd.valor_total, pd.valor_troca
+            ) t
         `, [p.inicio, p.fim]);
 
         const [[pag]] = await db.query(`
@@ -66,19 +79,22 @@ exports.resumo = async (req, res) => {
         const taxas = Number(pag.taxas);
         const despesas = Number(lanc.despesas);
         const outras = Number(lanc.outras_entradas);
-        const lucroBruto = receita - cmv;
+        const acrescimos = Number(acr.acrescimos);
+        const lucroBruto = receita + acrescimos - cmv;
+        const lucroReal = lucroBruto - taxas - despesas + outras;
 
         res.json({
             periodo: p,
             total_pedidos: vendas.total_pedidos,
             receita,
+            acrescimos,
             cmv,
             lucro_bruto: lucroBruto,
             taxas,
             despesas,
             outras_entradas: outras,
-            lucro_real: lucroBruto - taxas - despesas + outras,
-            margem_real: receita > 0 ? ((lucroBruto - taxas - despesas + outras) / receita) * 100 : 0,
+            lucro_real: lucroReal,
+            margem_real: (receita + acrescimos) > 0 ? (lucroReal / (receita + acrescimos)) * 100 : 0,
             conciliacao: {
                 qtd_pendentes: Number(pag.qtd_pendentes),
                 valor_pendente: Number(pag.valor_pendente),
@@ -110,6 +126,9 @@ exports.listarPagamentos = async (req, res) => {
             SELECT pp.id, pp.pedido_id, pp.forma_pagamento, pp.parcelas, pp.valor, pp.observacao,
                    pp.conciliado, pp.valor_recebido,
                    pd.valor_total, pd.valor_troca,
+                   (SELECT COALESCE(SUM(pr.preco_custo * pi.quantidade), 0)
+                      FROM pedido_itens pi JOIN produtos pr ON pr.id = pi.produto_id
+                     WHERE pi.pedido_id = pd.id) AS custo,
                    DATE_FORMAT(pd.criado_em, '%Y-%m-%d') AS data,
                    c.nome AS cliente_nome
             FROM pedido_pagamentos pp

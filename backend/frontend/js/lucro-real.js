@@ -48,7 +48,8 @@ async function carregarResumo() {
     try {
         const r = await api.financeiro.resumo(p.inicio, p.fim);
         document.getElementById('k-receita').textContent = formatarMoeda(r.receita);
-        document.getElementById('k-pedidos').textContent = `${r.total_pedidos} pedido(s)`;
+        document.getElementById('k-pedidos').textContent = `${r.total_pedidos} pedido(s)` +
+            (r.acrescimos > 0 ? ` · + ${formatarMoeda(r.acrescimos)} de juros pagos pelo cliente` : '');
         document.getElementById('k-cmv').textContent = formatarMoeda(r.cmv);
         document.getElementById('k-taxas').textContent = formatarMoeda(r.taxas);
         document.getElementById('k-despesas').textContent = formatarMoeda(r.despesas);
@@ -58,6 +59,7 @@ async function carregarResumo() {
         const cls = v => v < 0 ? 'negativo' : 'positivo';
         document.getElementById('calculo').innerHTML = `
             <div class="linha"><span>Receita das vendas (com frete e desconto)</span><span>${formatarMoeda(r.receita)}</span></div>
+            <div class="linha"><span>+ Juros/acréscimo pago pelo cliente (pagou mais que o valor da venda)</span><span class="positivo">${formatarMoeda(r.acrescimos)}</span></div>
             <div class="linha"><span>− Custo dos aparelhos vendidos</span><span class="negativo">${formatarMoeda(r.cmv)}</span></div>
             <div class="linha"><span><b>= Lucro bruto</b></span><span class="${cls(r.lucro_bruto)}"><b>${formatarMoeda(r.lucro_bruto)}</b></span></div>
             <div class="linha"><span>− Taxas de pagamento (vendas conciliadas)</span><span class="negativo">${formatarMoeda(r.taxas)}</span></div>
@@ -104,6 +106,11 @@ async function carregarPagamentos() {
             if (pend.length === v.pagamentos.length) badge = '<span class="badge badge-gray">Pendente</span>';
             else if (pend.length > 0) badge = '<span class="badge badge-amber">Parcial</span>';
 
+            // Lucro desta venda: valor da venda + juros que o cliente pagou a mais - custo - taxa já conciliada
+            const totalPago = v.pagamentos.reduce((soma, x) => soma + Number(x.valor), 0);
+            const acrescimo = Math.max(0, totalPago - (Number(v.valor_total) - Number(v.valor_troca)));
+            const lucroVenda = Number(v.valor_total) + acrescimo - Number(v.custo) - taxaVenda;
+
             const linhas = v.pagamentos.map(pg => {
                 const forma = esc(pg.forma_pagamento) + (Number(pg.parcelas) > 1 ? ` ${pg.parcelas}x` : '') +
                     (pg.observacao ? ` <span class="text-muted">(${esc(pg.observacao)})</span>` : '');
@@ -143,6 +150,10 @@ async function carregarPagamentos() {
                 <div class="venda-rodape">
                     <span>${Number(v.valor_troca) > 0 ? `Aparelho recebido na troca: ${formatarMoeda(v.valor_troca)} (não passa pela conta, não precisa conciliar)` : ''}</span>
                     <span>Taxa da venda (já conciliada): <b>${formatarMoeda(taxaVenda)}</b></span>
+                </div>
+                <div class="venda-rodape" style="border-top:1px solid var(--border);">
+                    <span>Venda ${formatarMoeda(v.valor_total)}${acrescimo > 0 ? ` + juros pagos pelo cliente ${formatarMoeda(acrescimo)}` : ''} − custo ${formatarMoeda(v.custo)} − taxa ${formatarMoeda(taxaVenda)}${pend.length ? ' (taxa ainda não conciliada)' : ''}</span>
+                    <span>Lucro da venda: <b style="color:${lucroVenda < 0 ? 'var(--destructive)' : 'var(--green)'}">${formatarMoeda(lucroVenda)}</b></span>
                 </div>
             </div>`;
         }).join('');
