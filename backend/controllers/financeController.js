@@ -101,12 +101,15 @@ exports.listarPagamentos = async (req, res) => {
         const status = req.query.status; // pendentes | conciliados | (vazio = todos)
 
         let filtro = '';
-        if (status === 'pendentes') filtro = 'AND pp.conciliado = FALSE';
-        if (status === 'conciliados') filtro = 'AND pp.conciliado = TRUE';
+        // O filtro vale para a venda inteira: o pedido traz todas as suas formas de pagamento
+        const pendenteNoPedido = '(SELECT 1 FROM pedido_pagamentos x WHERE x.pedido_id = pd.id AND x.conciliado = FALSE)';
+        if (status === 'pendentes') filtro = `AND EXISTS ${pendenteNoPedido}`;
+        if (status === 'conciliados') filtro = `AND NOT EXISTS ${pendenteNoPedido}`;
 
         const [linhas] = await db.query(`
             SELECT pp.id, pp.pedido_id, pp.forma_pagamento, pp.parcelas, pp.valor, pp.observacao,
                    pp.conciliado, pp.valor_recebido,
+                   pd.valor_total, pd.valor_troca,
                    DATE_FORMAT(pd.criado_em, '%Y-%m-%d') AS data,
                    c.nome AS cliente_nome
             FROM pedido_pagamentos pp

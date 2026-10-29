@@ -77,53 +77,83 @@ async function carregarResumo() {
     }
 }
 
-// ---------- Conciliação das vendas ----------
+// ---------- Conciliação das vendas (uma venda por bloco, cada forma de pagamento conciliada separadamente) ----------
 async function carregarPagamentos() {
     const p = periodo(); if (!p) return;
     const status = document.getElementById('filtro-status').value;
-    const corpo = document.getElementById('tabela-pagamentos');
+    const lista = document.getElementById('lista-vendas');
     try {
         pagamentosAtuais = await api.financeiro.pagamentos(p.inicio, p.fim, status);
-        document.getElementById('marcar-todos').checked = false;
         if (!pagamentosAtuais.length) {
-            corpo.innerHTML = '<tr><td colspan="9" class="text-muted">Nenhum pagamento nesse filtro</td></tr>';
+            lista.innerHTML = '<div class="panel"><p class="text-muted" style="padding:16px 20px; margin:0;">Nenhuma venda nesse filtro</p></div>';
             return;
         }
-        corpo.innerHTML = pagamentosAtuais.map(pg => {
-            const forma = esc(pg.forma_pagamento) + (Number(pg.parcelas) > 1 ? ` ${pg.parcelas}x` : '') +
-                (pg.observacao ? ` <span class="text-muted">(${esc(pg.observacao)})</span>` : '');
-            const valor = Number(pg.valor);
-            if (pg.conciliado) {
-                const taxa = valor - Number(pg.valor_recebido);
+
+        // Agrupa por pedido mantendo a ordem (mais recentes primeiro)
+        const vendas = new Map();
+        pagamentosAtuais.forEach(pg => {
+            if (!vendas.has(pg.pedido_id)) vendas.set(pg.pedido_id, { ...pg, pagamentos: [] });
+            vendas.get(pg.pedido_id).pagamentos.push(pg);
+        });
+
+        lista.innerHTML = [...vendas.values()].map(v => {
+            const pend = v.pagamentos.filter(x => !x.conciliado);
+            const taxaVenda = v.pagamentos.filter(x => x.conciliado)
+                .reduce((soma, x) => soma + Number(x.valor) - Number(x.valor_recebido), 0);
+            let badge = '<span class="badge badge-green">Conciliada</span>';
+            if (pend.length === v.pagamentos.length) badge = '<span class="badge badge-gray">Pendente</span>';
+            else if (pend.length > 0) badge = '<span class="badge badge-amber">Parcial</span>';
+
+            const linhas = v.pagamentos.map(pg => {
+                const forma = esc(pg.forma_pagamento) + (Number(pg.parcelas) > 1 ? ` ${pg.parcelas}x` : '') +
+                    (pg.observacao ? ` <span class="text-muted">(${esc(pg.observacao)})</span>` : '');
+                const valor = Number(pg.valor);
+                if (pg.conciliado) {
+                    return `<tr>
+                        <td>${forma}</td>
+                        <td class="text-right">${formatarMoeda(valor)}</td>
+                        <td class="text-right">${formatarMoeda(pg.valor_recebido)}</td>
+                        <td class="text-right">${formatarMoeda(valor - Number(pg.valor_recebido))}</td>
+                        <td><span class="badge badge-green">Conciliado</span>
+                            <button class="btn btn-secondary btn-sm" onclick="desfazer(${pg.id})">Desfazer</button></td></tr>`;
+                }
                 return `<tr>
-                    <td></td><td>${dataBR(pg.data)}</td><td>#${pg.pedido_id}</td><td>${esc(pg.cliente_nome)}</td><td>${forma}</td>
+                    <td>${forma}</td>
                     <td class="text-right">${formatarMoeda(valor)}</td>
-                    <td class="text-right">${formatarMoeda(pg.valor_recebido)}</td>
-                    <td class="text-right">${formatarMoeda(taxa)}</td>
-                    <td><span class="badge badge-green">Conciliado</span>
-                        <button class="btn btn-secondary btn-sm" onclick="desfazer(${pg.id})">Desfazer</button></td></tr>`;
-            }
-            return `<tr>
-                <td><input type="checkbox" class="sel-pag" value="${pg.id}"></td>
-                <td>${dataBR(pg.data)}</td><td>#${pg.pedido_id}</td><td>${esc(pg.cliente_nome)}</td><td>${forma}</td>
-                <td class="text-right">${formatarMoeda(valor)}</td>
-                <td class="text-right"><input type="text" class="campo-recebido" id="rec-${pg.id}" inputmode="decimal"
-                    value="${valor.toFixed(2).replace('.', ',')}" oninput="atualizarTaxa(${pg.id}, ${valor})"></td>
-                <td class="text-right" id="taxa-${pg.id}">${formatarMoeda(0)}</td>
-                <td><button class="btn btn-primary btn-sm" onclick="conciliar(${pg.id})">Conciliar</button></td></tr>`;
+                    <td class="text-right"><input type="text" class="campo-recebido" id="rec-${pg.id}" inputmode="decimal"
+                        value="${valor.toFixed(2).replace('.', ',')}" oninput="atualizarTaxa(${pg.id}, ${valor})"></td>
+                    <td class="text-right" id="taxa-${pg.id}">${formatarMoeda(0)}</td>
+                    <td><button class="btn btn-primary btn-sm" onclick="conciliar(${pg.id})">Conciliar</button></td></tr>`;
+            }).join('');
+
+            return `<div class="panel venda">
+                <div class="venda-topo">
+                    <div class="info">
+                        <b>Pedido #${v.pedido_id} ${badge}</b>
+                        <span class="text-muted">${dataBR(v.data)} · ${esc(v.cliente_nome)} · Total da venda ${formatarMoeda(v.valor_total)}</span>
+                    </div>
+                    <div class="acoes">
+                        ${pend.length ? `<button class="btn btn-secondary btn-sm" onclick="conciliarVenda(${v.pedido_id})">Conciliar venda toda</button>` : ''}
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th>Forma de pagamento</th><th class="text-right">Valor</th><th class="text-right">Recebido</th><th class="text-right">Taxa</th><th></th></tr></thead>
+                    <tbody>${linhas}</tbody>
+                </table>
+                <div class="venda-rodape">
+                    <span>${Number(v.valor_troca) > 0 ? `Aparelho recebido na troca: ${formatarMoeda(v.valor_troca)} (não passa pela conta, não precisa conciliar)` : ''}</span>
+                    <span>Taxa da venda (já conciliada): <b>${formatarMoeda(taxaVenda)}</b></span>
+                </div>
+            </div>`;
         }).join('');
     } catch (err) {
-        corpo.innerHTML = `<tr><td colspan="9" class="text-muted">Erro: ${esc(err.message)}</td></tr>`;
+        lista.innerHTML = `<div class="panel"><p class="text-muted" style="padding:16px 20px; margin:0;">Erro: ${esc(err.message)}</p></div>`;
     }
 }
 
 function atualizarTaxa(id, valor) {
     const rec = numeroDe(document.getElementById(`rec-${id}`).value);
     document.getElementById(`taxa-${id}`).textContent = isNaN(rec) ? '--' : formatarMoeda(valor - rec);
-}
-
-function marcarTodos(marcado) {
-    document.querySelectorAll('.sel-pag').forEach(c => c.checked = marcado);
 }
 
 async function conciliar(id) {
@@ -135,14 +165,22 @@ async function conciliar(id) {
     } catch (err) { alert('Erro ao conciliar: ' + err.message); }
 }
 
-async function conciliarSelecionados() {
-    const ids = Array.from(document.querySelectorAll('.sel-pag:checked')).map(c => Number(c.value));
-    if (!ids.length) { alert('Marque ao menos um pagamento pendente.'); return; }
-    if (!confirm(`Conciliar ${ids.length} pagamento(s) como recebidos integralmente (sem taxa)?`)) return;
+// Concilia, de uma vez, todas as formas pendentes da venda usando o que está digitado em "Recebido"
+async function conciliarVenda(pedidoId) {
+    const pendentes = pagamentosAtuais.filter(x => x.pedido_id === pedidoId && !x.conciliado);
+    const itens = [];
+    for (const pg of pendentes) {
+        const rec = numeroDe(document.getElementById(`rec-${pg.id}`).value);
+        if (isNaN(rec) || rec < 0) { alert(`Informe o valor recebido em "${pg.forma_pagamento}".`); return; }
+        itens.push({ id: pg.id, rec });
+    }
     try {
-        await api.financeiro.conciliarLote(ids);
+        for (const it of itens) await api.financeiro.conciliar(it.id, it.rec);
         await Promise.all([carregarResumo(), carregarPagamentos()]);
-    } catch (err) { alert('Erro ao conciliar: ' + err.message); }
+    } catch (err) {
+        alert('Erro ao conciliar: ' + err.message);
+        carregarPagamentos();
+    }
 }
 
 async function desfazer(id) {
