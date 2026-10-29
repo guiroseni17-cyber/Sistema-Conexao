@@ -1,11 +1,10 @@
 // ===== DADOS DA LOJA (edite aqui) =====
 const LOJA = {
-    nome: 'Conexão Store',
+    nome: 'Conexão Iphone',
     cnpj: '67.014.377/0001-70',
-    endereco: 'AV PEREIRA BARRETO, 1479 SALA 2110 BAETA NEVES - SÃO BERNARDO DO CAMPO - SP',
-    cep: '09.751-000',
-    fone: '(11) 97028-9556',
-    email: 'emersonn_ribeiro@hotmail.com'
+    endereco: 'Avenida Pereira Barreto, 1974 - Sala 2111',
+    fone: '11951578722',
+    email: 'conexaoiphonebr@gmail.com'
 };
 
 // Evita que texto digitado (nome, observação...) quebre ou injete HTML na página
@@ -15,36 +14,26 @@ function esc(texto) {
     }[c]));
 }
 
-function somarMeses(data, meses) {
-    const d = new Date(data);
-    d.setMonth(d.getMonth() + meses);
-    return d;
+// "2026-08-03T14:30" (data_hora do pedido) -> "03/08/2026", sem sofrer deslocamento de fuso
+function dataDoPedido(pedido) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(pedido.data_hora || '');
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : formatarData(pedido.criado_em);
 }
 
-// Monta as linhas "Parcela / Data / Valor / Forma"
-function montarParcelas(pedido) {
-    const linhas = [];
-
-    if (Number(pedido.valor_troca) > 0) {
-        linhas.push({ data: new Date(pedido.criado_em), valor: Number(pedido.valor_troca), forma: 'Crédito de troca' });
-    }
-
-    (pedido.pagamentos || []).forEach(p => {
-        const n = Math.max(1, Number(p.parcelas) || 1);
-        const valorParcela = Number(p.valor) / n;
-        for (let i = 0; i < n; i++) {
-            linhas.push({ data: somarMeses(pedido.criado_em, i), valor: valorParcela, forma: p.forma_pagamento });
-        }
-    });
-
-    return linhas;
-}
-
-// Junta rua, número, bairro, cidade/UF e CEP (clientes antigos têm tudo só no campo endereço)
+// Rua, número, complemento e bairro (clientes antigos têm tudo só no campo endereço)
 function montarEndereco(p) {
-    const cidadeUf = [p.cliente_cidade, p.cliente_estado].filter(Boolean).join('/');
-    return [p.cliente_endereco, p.cliente_numero, p.cliente_complemento, p.cliente_bairro, cidadeUf, p.cliente_cep ? 'CEP ' + p.cliente_cep : '']
-        .filter(Boolean).join(', ');
+    const rua = [p.cliente_endereco, p.cliente_numero].filter(Boolean).join(', ');
+    const bairro = p.cliente_bairro ? `(${p.cliente_bairro})` : '';
+    return [rua, p.cliente_complemento, bairro].filter(Boolean).join(' ');
+}
+
+// "iPhone 14 Pro Max 128GB ... - IMEI 1: xxx - IMEI 2: yyy"
+function descricaoAparelho(nome, modelo, imei, imei2) {
+    let txt = nome || '';
+    if (modelo && !txt.toLowerCase().includes(String(modelo).toLowerCase())) txt += ' ' + modelo;
+    if (imei) txt += ` - IMEI 1: ${imei}`;
+    if (imei2) txt += ` - IMEI 2: ${imei2}`;
+    return txt;
 }
 
 async function carregarRecibo() {
@@ -58,55 +47,82 @@ async function carregarRecibo() {
     try {
         const pedido = await api.pedidos.buscar(id);
 
-        // Topo
-        document.getElementById('r-numero').textContent = `PEDIDO ${pedido.id}`;
-        document.getElementById('r-ref').textContent = pedido.vendedor_nome ? `Vendedor: ${pedido.vendedor_nome}` : '';
-        document.getElementById('r-data').textContent = formatarData(pedido.criado_em);
+        // Cabeçalho
+        document.getElementById('r-marca').textContent = LOJA.nome;
         document.getElementById('r-loja').innerHTML =
-            `<b>${esc(LOJA.nome)}</b> - ${esc(LOJA.cnpj)}<br>` +
-            `${esc(LOJA.endereco)}<br>CEP: ${esc(LOJA.cep)}<br>` +
-            `Fone: ${esc(LOJA.fone)} · ${esc(LOJA.email)}`;
+            `${esc(LOJA.nome)}<br>CNPJ: ${esc(LOJA.cnpj)}<br>${esc(LOJA.endereco)}<br>` +
+            `${esc(LOJA.fone)}<br>${esc(LOJA.email)}`;
+        document.getElementById('r-data').innerHTML = `DATA DA VENDA<br>${esc(dataDoPedido(pedido))}`;
 
-        // Cliente
+        // Recibo / vendedor
+        document.getElementById('r-ident').innerHTML =
+            `<b>Recibo#</b>${esc(pedido.id)}` +
+            (pedido.vendedor_nome ? `<br><b>Vendedor:</b> ${esc(pedido.vendedor_nome)}` : '') +
+            (pedido.status === 'cancelado' ? '<br><b>(PEDIDO CANCELADO)</b>' : '');
+
+        // Consumidor
+        const fones = [pedido.cliente_celular, pedido.cliente_telefone].filter(Boolean).join(' / ');
         document.getElementById('r-cliente').innerHTML = `
-            <div><b>Nome:</b> ${esc(pedido.cliente_nome)}</div>
-            <div><b>CPF/CNPJ:</b> ${esc(pedido.cliente_cpf_cnpj || '-')}</div>
-            <div><b>E-mail:</b> ${esc(pedido.cliente_email || '-')}</div>
-            <div><b>Telefone:</b> ${esc([pedido.cliente_celular, pedido.cliente_telefone].filter(Boolean).join(' / ') || '-')}</div>
-            <div><b>Endereço:</b> ${esc(montarEndereco(pedido) || '-')}</div>
-        `;
-
-        // Itens
-        document.getElementById('r-itens').innerHTML = pedido.itens.map((i, idx) => `
             <tr>
-                <td>${idx + 1}. ${esc(i.produto_nome)}${i.modelo ? ' ' + esc(i.modelo) : ''}${i.imei ? ' · ' + esc(i.imei) : ''}</td>
-                <td class="num">${Number(i.quantidade).toFixed(2).replace('.', ',')}</td>
-                <td class="num">${formatarMoeda(i.preco_unitario)}</td>
-                <td class="num">${formatarMoeda(i.quantidade * i.preco_unitario)}</td>
+                <th style="width:42%">Nome/Razão social</th><th>Nascimento</th><th>Telefone</th><th>CPF/CNPJ</th>
+            </tr>
+            <tr>
+                <td>${esc(pedido.cliente_nome)}</td>
+                <td>${esc(pedido.cliente_nascimento || '')}</td>
+                <td>${esc(fones)}</td>
+                <td>${esc(pedido.cliente_cpf_cnpj || '')}</td>
+            </tr>
+            <tr>
+                <th>Endereço</th><th>CEP</th><th>Cidade</th><th>Estado</th>
+            </tr>
+            <tr>
+                <td>${esc(montarEndereco(pedido))}</td>
+                <td>${esc(pedido.cliente_cep || '')}</td>
+                <td>${esc(pedido.cliente_cidade || '')}</td>
+                <td>${esc(pedido.cliente_estado || '')}</td>
+            </tr>`;
+
+        // Produtos
+        document.getElementById('r-itens').innerHTML = pedido.itens.map(i => `
+            <tr>
+                <td></td>
+                <td>${esc(descricaoAparelho(i.produto_nome, i.modelo, i.imei, i.imei2))}</td>
+                <td class="c">${esc(i.garantia || '-')}</td>
+                <td class="c">${esc(i.quantidade)}</td>
+                <td>${formatarMoeda(i.preco_unitario)}</td>
+                <td>${formatarMoeda(i.quantidade * i.preco_unitario)}</td>
             </tr>
         `).join('');
 
-        // Total do pedido (uma linha)
-        document.getElementById('r-total').innerHTML =
-            `<b>Total do pedido</b><span>${formatarMoeda(pedido.valor_total)}</span>`;
+        document.getElementById('r-total').innerHTML = `
+            <tr>
+                <td class="sem-borda"></td>
+                <td style="width:12%">Total</td>
+                <td style="width:12%">${formatarMoeda(pedido.valor_total)}</td>
+            </tr>`;
 
-        // Parcelas
-        const parcelas = montarParcelas(pedido);
-        document.getElementById('r-parcelas').innerHTML = parcelas.length
-            ? parcelas.map((p, idx) => `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td>${formatarData(p.data)}</td>
-                    <td class="num">${formatarMoeda(p.valor)}</td>
-                    <td>${esc(p.forma)}</td>
-                </tr>`).join('')
-            : '<tr><td colspan="4">Sem pagamentos registrados</td></tr>';
+        // Pagamento: formas de pagamento + aparelhos recebidos na troca
+        const linhas = [];
+        (pedido.pagamentos || []).forEach(p => {
+            let forma = p.forma_pagamento;
+            if (Number(p.parcelas) > 1) forma += ` ${p.parcelas}x`;
+            if ((p.observacao || '').trim()) forma += ` - ${p.observacao.trim()}`;
+            linhas.push({ forma, valor: Number(p.valor) });
+        });
+        (pedido.trocas || []).forEach(t => {
+            linhas.push({
+                forma: descricaoAparelho(t.produto_nome, t.modelo, t.imei, t.imei2),
+                valor: Number(t.valor_abatido)
+            });
+        });
+        // Pedido antigo com crédito de troca mas sem o aparelho vinculado
+        if (!(pedido.trocas || []).length && Number(pedido.valor_troca) > 0) {
+            linhas.push({ forma: 'Crédito de troca', valor: Number(pedido.valor_troca) });
+        }
 
-        // Observação de cada forma de pagamento (ex.: "12x de R$ 190,00")
-        document.getElementById('r-pag-obs').innerHTML = (pedido.pagamentos || [])
-            .filter(p => (p.observacao || '').trim())
-            .map(p => `<p style="margin:4px 0; font-size:12.5px;"><strong>${esc(p.forma_pagamento)}:</strong> ${esc(p.observacao)}</p>`)
-            .join('');
+        document.getElementById('r-pagamentos').innerHTML = linhas.length
+            ? linhas.map(l => `<tr><td>${esc(l.forma)}</td><td>${formatarMoeda(l.valor)}</td></tr>`).join('')
+            : '<tr><td colspan="2">Sem pagamentos registrados</td></tr>';
 
         // Observações do pedido: o bloco só aparece se tiver texto
         const obs = (pedido.observacoes || '').trim();
@@ -119,11 +135,6 @@ async function carregarRecibo() {
             GARANTIA_LOJA.secoes.map(s =>
                 `<h6>${esc(s.titulo)}</h6>` + s.linhas.map(l => `<p>${esc(l)}</p>`).join('')
             ).join('');
-
-        if (pedido.status === 'cancelado') {
-            document.getElementById('recibo').style.opacity = '0.6';
-            document.getElementById('r-numero').innerHTML += ' <span style="font-size:14px;">(CANCELADO)</span>';
-        }
     } catch (err) {
         document.getElementById('recibo').innerHTML = `<p>Erro ao carregar recibo: ${esc(err.message)}</p>`;
     }
