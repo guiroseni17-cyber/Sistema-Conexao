@@ -539,3 +539,20 @@ body .btn-acao:hover { filter: brightness(1.06); background: var(--gradient-prim
     .form-grid { grid-template-columns: 1fr; }
     thead th, tbody td { padding-left: 14px; padding-right: 14px; }
 }
+/* ---------- Meta do mês ---------- */
+.metas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.meta-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 18px 20px; box-shadow: var(--shadow-soft); }
+.meta-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.meta-nome { font-weight: 700; font-size: 13.5px; }
+.meta-pct { font-family: 'Sora', sans-serif; font-weight: 600; font-size: 15px; color: var(--primary); }
+.meta-numeros { margin-top: 10px; font-size: 13px; color: var(--text-muted); }
+.meta-numeros strong { font-family: 'Sora', sans-serif; font-size: 24px; color: var(--text); letter-spacing: -0.02em; }
+.meta-barra { height: 10px; border-radius: 999px; background: var(--muted); overflow: hidden; margin-top: 12px; }
+.meta-barra-fill { height: 100%; border-radius: 999px; background: var(--gradient-primary); transition: width .6s ease; }
+.meta-rodape { margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+.meta-batida { border-color: rgba(28, 152, 90, .4); }
+.meta-batida .meta-pct { color: var(--success); }
+.meta-batida .meta-barra-fill { background: var(--success); }
+
+/* Ícone do menu (alvo) */
+.nav-item[href="metas.html"] .icon { --i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/></svg>"); }
