@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoneNinja - Meta do mês</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+    .seletor-mes { display: flex; align-items: center; gap: 10px; }
+    .seletor-mes strong { min-width: 150px; text-align: center; text-transform: capitalize; font-family: 'Sora', sans-serif; }
+    .meta-linha { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1.2fr; gap: 12px; align-items: end; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .meta-linha .form-group { margin-bottom: 0; }
+    .meta-linha-palavras { grid-column: 1 / 4; }
+    .editor-corpo { padding: 6px 22px 22px 22px; }
+    .editor-acoes { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    @media (max-width: 1023px) {
+        .meta-linha { grid-template-columns: 1fr 1fr; }
+        .meta-linha-palavras { grid-column: 1 / -1; }
+    }
+</style>
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="agenda.html" class="nav-item"><span class="icon">📅</span> Agenda</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="produtos-pai.html" class="nav-item"><span class="icon">🗂</span> Produtos pai</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Meta do mês</div>
+                <div class="page-subtitle">Acompanhe o que já foi vendido contra a meta</div>
+            </div>
+            <div class="seletor-mes">
+                <button class="btn btn-secondary btn-sm" onclick="mudarMes(-1)">◀</button>
+                <strong id="nome-mes"></strong>
+                <button class="btn btn-secondary btn-sm" onclick="mudarMes(1)">▶</button>
+                <button class="btn btn-primary somente-admin" onclick="abrirEditor()">Editar metas</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="metas-grid" id="metas-lista"></div>
+
+            <p class="text-muted" style="margin-top:16px; font-size:12.5px;">
+                Conta somente vendas finalizadas do mês (agendamentos entram quando forem concluídos; pedidos cancelados saem da conta).
+            </p>
+
+            <div class="panel mt-16" id="painel-editor" style="display:none;">
+                <div class="panel-header"><h3>Editar metas do mês</h3></div>
+                <div class="editor-corpo">
+                    <p class="text-muted" style="font-size:12.5px; margin:12px 0 4px 0;">
+                        Uma venda conta para a meta quando o produto vendido tem a categoria escolhida e/ou uma das palavras no nome.
+                        Ex.: Seguro → palavras "seguro, garantia estendida".
+                    </p>
+                    <div id="editor-linhas"></div>
+                    <div class="editor-acoes">
+                        <button class="btn btn-secondary" onclick="adicionarLinha()">+ Adicionar meta</button>
+                        <button class="btn btn-primary" onclick="salvarMetas()">Salvar metas</button>
+                        <button class="btn btn-secondary" onclick="fecharEditor()">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/metas.js"></script>
+</body>
+</html>
