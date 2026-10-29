@@ -34,7 +34,7 @@ async function carregarProdutos() {
                                 <td>${p.origem === 'troca'
                     ? `<span class="badge badge-green" title="Pedido #${p.troca_pedido_id}">${p.troca_cliente_nome ? 'De: ' + esc(p.troca_cliente_nome) : 'Troca'}${p.troca_pedido_id ? ' (#' + p.troca_pedido_id + ')' : ''}</span>`
                     : '<span class="badge badge-gray">Compra</span>'}</td>
-                <td class="text-right">${p.estoque_minimo > 0 && p.quantidade <= p.estoque_minimo ? `<span class="badge ${p.quantidade === 0 ? 'badge-red' : 'badge-amber'}">${p.quantidade}</span>` : p.quantidade}</td>
+                <td class="text-right">${p.categoria === 'acessorio' && p.estoque_minimo > 0 && p.quantidade <= p.estoque_minimo ? `<span class="badge ${p.quantidade === 0 ? 'badge-red' : 'badge-amber'}">${p.quantidade}</span>` : p.quantidade}</td>
                 <td class="text-right">${formatarMoeda(p.preco_venda)}</td>
                 <td class="text-right">
                     <div class="row-actions">
@@ -122,6 +122,11 @@ async function abrirModalProduto() {
 function fecharModalProduto() {
     document.getElementById('modal-produto').style.display = 'none';
 }
+function atualizarCampoEstoqueMinimo() {
+    const ehAcessorio = document.getElementById('p-categoria').value === 'acessorio';
+    document.getElementById('p-estoque-minimo').closest('.form-group').style.display = ehAcessorio ? '' : 'none';
+}
+document.getElementById('p-categoria').addEventListener('change', atualizarCampoEstoqueMinimo);
 
 async function editarProduto(id) {
     const p = await api.produtos.buscar(id);
