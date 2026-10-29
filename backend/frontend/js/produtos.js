@@ -97,6 +97,7 @@ function escolherVariacaoEntrada() {
     form.dataset.modeloBaseId = v.id;
     document.getElementById('p-nome').value = v.nome;
     document.getElementById('p-categoria').value = v.categoria;
+        atualizarCampoEstoqueMinimo();
     document.getElementById('p-condicao').value = v.condicao || 'novo';
     document.getElementById('p-marca').value = v.marca || '';
     document.getElementById('p-modelo').value = v.modelo || pai.nome;
@@ -110,6 +111,7 @@ document.getElementById('p-variacao').addEventListener('change', escolherVariaca
 async function abrirModalProduto() {
     const form = document.getElementById('form-produto');
     form.reset();
+    atualizarCampoEstoqueMinimo();
     delete form.dataset.editId;
     form.dataset.modeloBaseId = '';
     document.getElementById('titulo-modal-produto').textContent = 'Entrada manual';
@@ -138,6 +140,7 @@ async function editarProduto(id) {
     document.getElementById('p-imei').value = p.imei || '';
     document.getElementById('p-quantidade').value = p.quantidade;
     document.getElementById('p-estoque-minimo').value = p.estoque_minimo;
+    atualizarCampoEstoqueMinimo();
     document.getElementById('p-custo').value = p.preco_custo;
     document.getElementById('p-venda').value = p.preco_venda;
     document.getElementById('p-obs').value = p.observacoes || '';
