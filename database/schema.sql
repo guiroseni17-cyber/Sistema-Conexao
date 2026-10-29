@@ -229,5 +229,6 @@ CREATE TABLE pedido_pagamentos (
     forma_pagamento VARCHAR(50) NOT NULL,
     parcelas INT NOT NULL DEFAULT 1,
     valor DECIMAL(10,2) NOT NULL DEFAULT 0,
+    observacao VARCHAR(255) NULL,
     FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
 );

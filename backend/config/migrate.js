@@ -25,7 +25,9 @@ const COLUNAS = [
     ['clientes', 'complemento', 'VARCHAR(100) NULL'],
     ['clientes', 'bairro', 'VARCHAR(100) NULL'],
     ['clientes', 'cidade', 'VARCHAR(100) NULL'],
-    ['clientes', 'estado', 'VARCHAR(2) NULL']
+    ['clientes', 'estado', 'VARCHAR(2) NULL'],
+    // Observação livre de cada forma de pagamento (ex.: "12x de R$ 190")
+    ['pedido_pagamentos', 'observacao', 'VARCHAR(255) NULL']
 ];
 
 // Tabelas novas (criadas só se ainda não existirem)

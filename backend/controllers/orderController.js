@@ -209,7 +209,7 @@ exports.criar = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const { cliente_id, pagamentos, itens, troca, observacoes, data_pedido, agendado } = req.body;
+        const { cliente_id, pagamentos, itens, troca, observacoes, data_pedido, agendado, vendedor_id } = req.body;
 
         if (!cliente_id || !itens || itens.length === 0) {
             await connection.rollback();
@@ -229,16 +229,16 @@ exports.criar = async (req, res) => {
             `INSERT INTO pedidos (cliente_id, usuario_id, status, forma_pagamento, valor_total, valor_troca, valor_a_pagar, observacoes${data_pedido ? ', criado_em' : ''})
              VALUES (?, ?, ?, ?, ?, ?, ?, ?${data_pedido ? ', ?' : ''})`,
             data_pedido
-                ? [cliente_id, req.user?.id || null, agendado ? 'aberto' : 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null, data_pedido]
-                : [cliente_id, req.user?.id || null, 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null]
+                ? [cliente_id, Number(vendedor_id) || req.user?.id || null, agendado ? 'aberto' : 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null, data_pedido]
+                : [cliente_id, Number(vendedor_id) || req.user?.id || null, 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null]
         );
         const pedidoId = pedidoResult.insertId;
 
         if (pagamentos && pagamentos.length > 0) {
             for (const p of pagamentos) {
                 await connection.query(
-                    'INSERT INTO pedido_pagamentos (pedido_id, forma_pagamento, parcelas, valor) VALUES (?, ?, ?, ?)',
-                    [pedidoId, p.forma_pagamento, p.parcelas || 1, p.valor || 0]
+                    'INSERT INTO pedido_pagamentos (pedido_id, forma_pagamento, parcelas, valor, observacao) VALUES (?, ?, ?, ?, ?)',
+                    [pedidoId, p.forma_pagamento, p.parcelas || 1, p.valor || 0, String(p.observacao || '').trim().slice(0, 255) || null]
                 );
             }
         }
@@ -317,7 +317,7 @@ exports.editar = async (req, res) => {
             return res.status(400).json({ erro: 'Pedido cancelado não pode ser editado' });
         }
 
-        const { cliente_id, pagamentos, observacoes, itens, valor_troca } = req.body;
+        const { cliente_id, pagamentos, observacoes, itens, valor_troca, vendedor_id } = req.body;
         if (!cliente_id || !itens || itens.length === 0) {
             await connection.rollback();
             return res.status(400).json({ erro: 'Cliente e ao menos um item vendido são obrigatórios' });
@@ -396,17 +396,17 @@ exports.editar = async (req, res) => {
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
         await connection.query(
-            `UPDATE pedidos SET cliente_id=?, forma_pagamento=?, observacoes=?, valor_total=?, valor_troca=?, valor_a_pagar=?
+            `UPDATE pedidos SET cliente_id=?, usuario_id=COALESCE(?, usuario_id), forma_pagamento=?, observacoes=?, valor_total=?, valor_troca=?, valor_a_pagar=?
              WHERE id=?`,
-            [cliente_id, formaPagamentoResumo, observacoes || null, valorTotal, valorTrocaFinal, valorAPagar, pedidoId]
+            [cliente_id, Number(vendedor_id) || null, formaPagamentoResumo, observacoes || null, valorTotal, valorTrocaFinal, valorAPagar, pedidoId]
         );
 
         await connection.query('DELETE FROM pedido_pagamentos WHERE pedido_id = ?', [pedidoId]);
         if (pagamentos && pagamentos.length > 0) {
             for (const p of pagamentos) {
                 await connection.query(
-                    'INSERT INTO pedido_pagamentos (pedido_id, forma_pagamento, parcelas, valor) VALUES (?, ?, ?, ?)',
-                    [pedidoId, p.forma_pagamento, p.parcelas || 1, p.valor || 0]
+                    'INSERT INTO pedido_pagamentos (pedido_id, forma_pagamento, parcelas, valor, observacao) VALUES (?, ?, ?, ?, ?)',
+                    [pedidoId, p.forma_pagamento, p.parcelas || 1, p.valor || 0, String(p.observacao || '').trim().slice(0, 255) || null]
                 );
             }
         }

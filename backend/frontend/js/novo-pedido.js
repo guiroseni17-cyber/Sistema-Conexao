@@ -164,6 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <option value="Cartão de débito">Cartão de débito</option>
                 </select>
                 <input type="number" class="pag-valor" placeholder="Valor R$ (${i})" step="0.01">
+                <input type="text" class="pag-obs" placeholder="Obs. (ex.: 12x de R$ 190,00)" maxlength="255" autocomplete="off">
             `;
             containerParcelas.appendChild(div);
         }
@@ -229,6 +230,33 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
+
+    // Lupa: abre a lista completa de clientes com busca e ficha do cadastro
+    document.getElementById("btnBuscarCliente").addEventListener("click", () => {
+        ClienteBusca.abrir({
+            termo: inputCliente.value.trim(),
+            aoEscolher: (cli) => {
+                inputCliente.value = cli.nome;
+                inputClienteId.value = cli.id;
+                boxSugestoesCliente.style.display = "none";
+            }
+        });
+    });
+
+    // Vendedor: lista de quem tem login no sistema (quem está logado já vem marcado,
+    // mas dá para trocar, ex.: a Vitória atendendo um pedido no login de outra pessoa)
+    const selVendedor = document.getElementById("vendedor");
+    const vendedoresPronto = (async () => {
+        try {
+            const lista = await api.usuarios.vendedores();
+            const logado = getUsuarioLogado();
+            selVendedor.innerHTML = lista.map(u => `<option value="${u.id}">${u.nome}</option>`).join("");
+            if (logado && lista.some(u => u.id === logado.id)) selVendedor.value = logado.id;
+        } catch (err) {
+            selVendedor.innerHTML = '<option value="">Erro ao carregar vendedores</option>';
+            console.error("Erro ao carregar vendedores:", err);
+        }
+    })();
 
     ["totalFrete", "totalDesconto"].forEach(id => {
         document.getElementById(id).addEventListener("input", calcularTotais);
@@ -497,7 +525,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const pagamentos = Array.from(document.querySelectorAll(".linha-pagamento")).map(linha => ({
             forma_pagamento: linha.querySelector(".pag-forma").value,
             parcelas: Number(linha.dataset.parcelas) || 1,
-            valor: Number(linha.querySelector(".pag-valor").value) || 0
+            valor: Number(linha.querySelector(".pag-valor").value) || 0,
+            observacao: linha.querySelector(".pag-obs").value.trim() || null
         })).filter(p => p.valor > 0);
 
         const frete = parseFloat(document.getElementById("totalFrete").value) || 0;
@@ -509,6 +538,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const dados = {
                 cliente_id: Number(inputClienteId.value),
+                vendedor_id: Number(selVendedor.value) || undefined,
                 itens,
                 pagamentos,
                 observacoes: observacoes.trim() || null
@@ -555,7 +585,14 @@ document.addEventListener("DOMContentLoaded", () => {
             // Cliente e vendedor
             inputCliente.value = pedido.cliente_nome;
             inputClienteId.value = pedido.cliente_id;
-            if (pedido.vendedor_nome) document.getElementById("vendedor").value = pedido.vendedor_nome;
+            await vendedoresPronto;
+            if (pedido.usuario_id) {
+                // vendedor desativado depois da venda continua aparecendo no pedido antigo
+                if (!Array.from(selVendedor.options).some(o => Number(o.value) === pedido.usuario_id)) {
+                    selVendedor.add(new Option(pedido.vendedor_nome || `Usuário #${pedido.usuario_id}`, pedido.usuario_id));
+                }
+                selVendedor.value = pedido.usuario_id;
+            }
 
             // Itens
             tabela.innerHTML = "";
@@ -576,6 +613,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (!linhasPag[i]) return;
                     linhasPag[i].querySelector(".pag-forma").value = p.forma_pagamento;
                     linhasPag[i].querySelector(".pag-valor").value = p.valor;
+                    linhasPag[i].querySelector(".pag-obs").value = p.observacao || "";
                     linhasPag[i].dataset.parcelas = p.parcelas;
                 });
             }

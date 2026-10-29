@@ -12,6 +12,16 @@ exports.listar = async (req, res) => {
     }
 };
 
+// Lista simples de quem pode ser escolhido como vendedor (qualquer usuário logado pode ver)
+exports.listarVendedores = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT id, nome FROM usuarios WHERE ativo = TRUE ORDER BY nome ASC');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao listar vendedores', detalhe: err.message });
+    }
+};
+
 exports.criar = async (req, res) => {
     try {
         const { nome, email, senha, papel } = req.body;

@@ -34,8 +34,18 @@ exports.listar = async (req, res) => {
         let sql = SELECT_CLIENTE;
         const params = [];
         if (busca) {
-            sql += ' WHERE nome LIKE ? OR telefone LIKE ? OR celular LIKE ? OR cpf_cnpj LIKE ?';
-            params.push(`%${busca}%`, `%${busca}%`, `%${busca}%`, `%${busca}%`);
+            // Busca por nome, e-mail, endereço e também por números (CPF/CNPJ e telefones)
+            // mesmo que o usuário digite sem pontos, traços ou parênteses.
+            const limpa = (c) => `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${c},'.',''),'-',''),'/',''),'(',''),')',''),' ','')`;
+            const txt = `%${busca}%`;
+            const dig = `%${String(busca).replace(/\D/g, '')}%`;
+            sql += ` WHERE nome LIKE ? OR email LIKE ? OR cidade LIKE ? OR bairro LIKE ? OR endereco LIKE ?
+                     OR cpf_cnpj LIKE ? OR telefone LIKE ? OR celular LIKE ?`;
+            params.push(txt, txt, txt, txt, txt, txt, txt, txt);
+            if (dig.length > 3) {
+                sql += ` OR ${limpa('cpf_cnpj')} LIKE ? OR ${limpa('telefone')} LIKE ? OR ${limpa('celular')} LIKE ?`;
+                params.push(dig, dig, dig);
+            }
         }
         sql += ' ORDER BY nome ASC';
         const [rows] = await db.query(sql, params);

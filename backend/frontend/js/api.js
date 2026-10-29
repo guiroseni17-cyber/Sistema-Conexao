@@ -110,6 +110,7 @@ const api = {
     },
     usuarios: {
         listar: () => apiRequest('/usuarios'),
+        vendedores: () => apiRequest('/usuarios/vendedores'),
         criar: (dados) => apiRequest('/usuarios', { method: 'POST', body: JSON.stringify(dados) }),
         alternarAtivo: (id) => apiRequest(`/usuarios/${id}/alternar-ativo`, { method: 'PUT' }),
         trocarSenha: (dados) => apiRequest('/usuarios/senha', { method: 'PUT', body: JSON.stringify(dados) })

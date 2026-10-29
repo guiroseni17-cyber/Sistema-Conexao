@@ -102,6 +102,12 @@ async function carregarRecibo() {
                 </tr>`).join('')
             : '<tr><td colspan="4">Sem pagamentos registrados</td></tr>';
 
+        // Observação de cada forma de pagamento (ex.: "12x de R$ 190,00")
+        document.getElementById('r-pag-obs').innerHTML = (pedido.pagamentos || [])
+            .filter(p => (p.observacao || '').trim())
+            .map(p => `<p style="margin:4px 0; font-size:12.5px;"><strong>${esc(p.forma_pagamento)}:</strong> ${esc(p.observacao)}</p>`)
+            .join('');
+
         // Observações do pedido: o bloco só aparece se tiver texto
         const obs = (pedido.observacoes || '').trim();
         document.getElementById('r-observacoes').textContent = obs;
