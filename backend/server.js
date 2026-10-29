@@ -43,6 +43,7 @@ app.use('/api/pedidos', orderRoutes);
 app.use('/api/fornecedores', supplierRoutes);
 app.use('/api/compras', purchaseRoutes);
 app.use('/api/relatorios', reportRoutes);
+app.use('/api/metas', metaRoutes);
 
 app.get('/api', (req, res) => {
     res.json({ sistema: 'FoneNinja API', status: 'online' });
