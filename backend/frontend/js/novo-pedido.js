@@ -39,6 +39,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
     
+    // Aceita "10,50" ou "10.50" nos campos de frete e desconto
+    function lerValor(id) {
+        const v = parseFloat(String(document.getElementById(id).value).replace(",", "."));
+        return isNaN(v) ? 0 : v;
+    }
+
     function calcularTotais() {
         let somaProdutos = 0;
         document.querySelectorAll("#tabelaProdutos tbody tr").forEach(row => {
@@ -50,8 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         document.getElementById("totalProdutos").value = somaProdutos.toFixed(2);
-        const frete = parseFloat(document.getElementById("totalFrete").value) || 0;
-        const desconto = parseFloat(document.getElementById("totalDesconto").value) || 0;
+        const frete = lerValor("totalFrete");
+        const desconto = lerValor("totalDesconto");
         const geral = somaProdutos + frete - desconto;
         document.getElementById("totalGeral").value = geral.toFixed(2);
 
@@ -646,11 +652,10 @@ document.addEventListener("DOMContentLoaded", () => {
             observacao: linha.querySelector(".pag-obs").value.trim() || null
         })).filter(p => p.valor > 0);
 
-        const frete = parseFloat(document.getElementById("totalFrete").value) || 0;
-        const desconto = parseFloat(document.getElementById("totalDesconto").value) || 0;
-        let observacoes = document.getElementById("obsPedido").value;
-        if (frete > 0) observacoes += `\nFrete: R$ ${frete.toFixed(2)}`;
-        if (desconto > 0) observacoes += `\nDesconto: R$ ${desconto.toFixed(2)}`;
+        const frete = lerValor("totalFrete");
+        const desconto = lerValor("totalDesconto");
+        // Frete e desconto agora vão como campos do pedido (e entram no valor total), não mais como texto
+        const observacoes = document.getElementById("obsPedido").value;
 
         try {
             const dados = {
@@ -660,6 +665,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 agendado: !!inputData.value && new Date(inputData.value) > new Date(),
                 itens,
                 pagamentos,
+                frete,
+                desconto,
                 observacoes: observacoes.trim() || null
             };
 
@@ -737,6 +744,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     linhasPag[i].dataset.parcelas = p.parcelas;
                 });
             }
+
+            // Frete e desconto gravados no pedido
+            document.getElementById("totalFrete").value = Number(pedido.frete || 0).toFixed(2).replace(".", ",");
+            document.getElementById("totalDesconto").value = Number(pedido.desconto || 0).toFixed(2).replace(".", ",");
 
             // Observações
             document.getElementById("obsPedido").value = pedido.observacoes || "";

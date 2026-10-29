@@ -13,6 +13,9 @@
     .rec table { width: 100%; border-collapse: collapse; }
     .rec th, .rec td { border: 1px solid #000; padding: 2px 4px; text-align: left; vertical-align: top; background: #fff; }
     .rec th { background: #ddd; font-weight: 700; text-transform: none; letter-spacing: 0; font-size: 11px; }
+    /* O style.css do sistema remove a borda da última linha das tabelas: aqui ela precisa fechar */
+    .rec tr:last-child td, .rec tr:last-child th { border-bottom: 1px solid #000; }
+    .rec tr:hover { background: none; }
     .rec .c { text-align: center; }
     .rec .num { text-align: left; white-space: nowrap; }
 
@@ -27,7 +30,7 @@
     .secao-titulo { font-size: 11px; font-weight: 700; text-transform: uppercase; margin: 10px 0 2px; }
 
     .rec-tot td { border: 1px solid #000; font-weight: 700; }
-    .rec-tot .sem-borda { border: 0; }
+    .rec .rec-tot td.sem-borda { border: 0; }
 
     .rec-obs-texto { border: 1px solid #000; padding: 4px 6px; min-height: 28px; white-space: pre-wrap; }
 

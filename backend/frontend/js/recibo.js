@@ -94,12 +94,18 @@ async function carregarRecibo() {
             </tr>
         `).join('');
 
-        document.getElementById('r-total').innerHTML = `
+        const frete = Number(pedido.frete || 0);
+        const desconto = Number(pedido.desconto || 0);
+        const linhaTotal = (rotulo, valor) => `
             <tr>
                 <td class="sem-borda"></td>
-                <td style="width:12%">Total</td>
-                <td style="width:12%">${formatarMoeda(pedido.valor_total)}</td>
+                <td style="width:12%">${rotulo}</td>
+                <td style="width:12%">${valor}</td>
             </tr>`;
+        document.getElementById('r-total').innerHTML =
+            (frete > 0 ? linhaTotal('Frete', formatarMoeda(frete)) : '') +
+            (desconto > 0 ? linhaTotal('Desconto', '- ' + formatarMoeda(desconto)) : '') +
+            linhaTotal('Total', formatarMoeda(pedido.valor_total));
 
         // Pagamento: formas de pagamento + aparelhos recebidos na troca
         const linhas = [];

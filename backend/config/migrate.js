@@ -9,6 +9,8 @@ const COLUNAS = [
     ['produtos', 'garantia', 'VARCHAR(30) NULL'],
     ['produtos', 'preco_venda_atacado', 'DECIMAL(10,2) NULL'],
     ['produtos', 'modelo_base_id', 'INT NULL'],
+    ['pedidos', 'frete', 'DECIMAL(10,2) NOT NULL DEFAULT 0'],
+    ['pedidos', 'desconto', 'DECIMAL(10,2) NOT NULL DEFAULT 0'],
     ['pedido_trocas', 'preco_compra', 'DECIMAL(10,2) NULL'],
     ['pedido_trocas', 'desconto', 'DECIMAL(10,2) NOT NULL DEFAULT 0'],
     // Produto pai: cada variação (modelos_base) aponta para o seu pai

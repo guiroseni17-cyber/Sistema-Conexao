@@ -257,6 +257,8 @@ exports.criar = async (req, res) => {
         await connection.beginTransaction();
 
         const { cliente_id, pagamentos, itens, troca, trocas, observacoes, data_pedido, agendado, vendedor_id } = req.body;
+        const frete = Math.max(0, Number(req.body.frete) || 0);
+        const desconto = Math.max(0, Number(req.body.desconto) || 0);
 
         if (!cliente_id || !itens || itens.length === 0) {
             await connection.rollback();
@@ -269,6 +271,8 @@ exports.criar = async (req, res) => {
         for (const item of itens) {
             valorTotal += item.quantidade * item.preco_unitario;
         }
+        // Frete soma e desconto subtrai: o valor do pedido já sai com eles aplicados
+        valorTotal = Math.max(0, valorTotal + frete - desconto);
 
         // Aceita vários aparelhos na troca ("trocas") ou um só ("troca", formato antigo)
         const listaTrocas = (Array.isArray(trocas) ? trocas : [troca]).filter(t => t && t.nome);
@@ -277,11 +281,11 @@ exports.criar = async (req, res) => {
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
         const [pedidoResult] = await connection.query(
-            `INSERT INTO pedidos (cliente_id, usuario_id, status, forma_pagamento, valor_total, valor_troca, valor_a_pagar, observacoes${dataPedidoSql ? ', criado_em' : ''})
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?${dataPedidoSql ? ', ?' : ''})`,
+            `INSERT INTO pedidos (cliente_id, usuario_id, status, forma_pagamento, valor_total, valor_troca, valor_a_pagar, frete, desconto, observacoes${dataPedidoSql ? ', criado_em' : ''})
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?${dataPedidoSql ? ', ?' : ''})`,
             dataPedidoSql
-                ? [cliente_id, Number(vendedor_id) || req.user?.id || null, agendado ? 'aberto' : 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null, dataPedidoSql]
-                : [cliente_id, Number(vendedor_id) || req.user?.id || null, 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null]
+                ? [cliente_id, Number(vendedor_id) || req.user?.id || null, agendado ? 'aberto' : 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, frete, desconto, observacoes || null, dataPedidoSql]
+                : [cliente_id, Number(vendedor_id) || req.user?.id || null, 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, frete, desconto, observacoes || null]
         );
         const pedidoId = pedidoResult.insertId;
 
@@ -370,6 +374,9 @@ exports.editar = async (req, res) => {
         }
 
         const { cliente_id, pagamentos, observacoes, itens, valor_troca, vendedor_id, data_pedido, agendado } = req.body;
+        // Se a tela não mandar frete/desconto, mantém o que já estava gravado no pedido
+        const frete = req.body.frete === undefined ? Number(pedidoRows[0].frete || 0) : Math.max(0, Number(req.body.frete) || 0);
+        const desconto = req.body.desconto === undefined ? Number(pedidoRows[0].desconto || 0) : Math.max(0, Number(req.body.desconto) || 0);
         if (!cliente_id || !itens || itens.length === 0) {
             await connection.rollback();
             return res.status(400).json({ erro: 'Cliente e ao menos um item vendido são obrigatórios' });
@@ -409,6 +416,7 @@ exports.editar = async (req, res) => {
 
             valorTotal += item.quantidade * item.preco_unitario;
         }
+        valorTotal = Math.max(0, valorTotal + frete - desconto);
 
         // Histórico de estoque: registra só a diferença líquida por produto
         // (positivo = passou a vender mais, negativo = devolveu ao estoque)
@@ -446,9 +454,9 @@ exports.editar = async (req, res) => {
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
         await connection.query(
-            `UPDATE pedidos SET cliente_id=?, usuario_id=COALESCE(?, usuario_id), criado_em=COALESCE(?, criado_em), status=IF(?, 'aberto', status), forma_pagamento=?, observacoes=?, valor_total=?, valor_troca=?, valor_a_pagar=?
+            `UPDATE pedidos SET cliente_id=?, usuario_id=COALESCE(?, usuario_id), criado_em=COALESCE(?, criado_em), status=IF(?, 'aberto', status), forma_pagamento=?, observacoes=?, valor_total=?, valor_troca=?, valor_a_pagar=?, frete=?, desconto=?
              WHERE id=?`,
-            [cliente_id, Number(vendedor_id) || null, dataPedidoValida(data_pedido), agendado ? 1 : 0, formaPagamentoResumo, observacoes || null, valorTotal, valorTrocaFinal, valorAPagar, pedidoId]
+            [cliente_id, Number(vendedor_id) || null, dataPedidoValida(data_pedido), agendado ? 1 : 0, formaPagamentoResumo, observacoes || null, valorTotal, valorTrocaFinal, valorAPagar, frete, desconto, pedidoId]
         );
 
         await connection.query('DELETE FROM pedido_pagamentos WHERE pedido_id = ?', [pedidoId]);
