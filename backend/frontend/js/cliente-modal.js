@@ -29,7 +29,6 @@
     #cm-rodape .cm-dir { display: flex; gap: 10px; }
     #cm-rodape button { padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; }
     #cm-cancelar { background: #e9ecef; color: #333; border: 1px solid #ccc; }
-    #cm-completo { background: #fff; color: #007bff; border: 1px solid #007bff; padding: 10px 15px !important; }
     #cm-salvar { background: #337ab7; color: #fff; border: none; font-weight: bold; padding: 10px 25px !important; }
     #cm-salvar[disabled] { opacity: .6; cursor: wait; }
     .cm-msg { font-size: 11px; min-height: 0; color: #c0392b; }
@@ -71,16 +70,18 @@
                     ${campo('cm-f3', 'Endereço', `<input type="text" id="cm-endereco" placeholder="Rua, Avenida, etc.">`, 'cm-endereco')}
                     ${campo('cm-f1', 'Número', `<input type="text" id="cm-numero" placeholder="Nº">`, 'cm-numero')}
                 </div>
-                <div class="cm-linha" style="margin-bottom:0;">
+                <div class="cm-linha">
+                    ${campo('cm-f2', 'Complemento', `<input type="text" id="cm-complemento" placeholder="Bloco, apto, casa 2...">`, 'cm-complemento')}
                     ${campo('cm-f2', 'Bairro', `<input type="text" id="cm-bairro">`, 'cm-bairro')}
-                    ${campo('cm-f2', 'Cidade', `<input type="text" id="cm-cidade">`, 'cm-cidade')}
+                </div>
+                <div class="cm-linha" style="margin-bottom:0;">
+                    ${campo('cm-f3', 'Cidade', `<input type="text" id="cm-cidade">`, 'cm-cidade')}
                     ${campo('cm-f1', 'Estado', `<select id="cm-estado"><option value="">Selecione</option>${ESTADOS.map(u => `<option value="${u}">${u}</option>`).join('')}</select>`, 'cm-estado')}
                 </div>
             </fieldset>
             <div id="cm-rodape">
                 <button type="button" id="cm-cancelar">Cancelar</button>
                 <div class="cm-dir">
-                    <button type="button" id="cm-completo">Ver cadastro completo</button>
                     <button type="submit" id="cm-salvar">Salvar</button>
                 </div>
             </div>
@@ -91,7 +92,7 @@
     const CAMPOS = {
         'cm-tipo': 'tipo_pessoa', 'cm-doc': 'cpf_cnpj', 'cm-nome': 'nome', 'cm-nasc': 'data_nascimento',
         'cm-genero': 'genero', 'cm-celular': 'celular', 'cm-telefone': 'telefone', 'cm-email': 'email',
-        'cm-cep': 'cep', 'cm-endereco': 'endereco', 'cm-numero': 'numero', 'cm-bairro': 'bairro',
+        'cm-cep': 'cep', 'cm-endereco': 'endereco', 'cm-numero': 'numero', 'cm-complemento': 'complemento', 'cm-bairro': 'bairro',
         'cm-cidade': 'cidade', 'cm-estado': 'estado'
     };
 
@@ -221,10 +222,6 @@
 
         $('cm-x').addEventListener('click', fechar);
         $('cm-cancelar').addEventListener('click', fechar);
-        $('cm-completo').addEventListener('click', () => {
-            // Ainda não existe uma tela de cadastro completo; leva para a lista de clientes.
-            if (!/clientes\.html$/.test(window.location.pathname)) window.open('clientes.html', '_blank');
-        });
         $('cm-tipo').addEventListener('change', () => { atualizarRotuloDocumento(); mostrarErroDocumento(false); });
         $('cm-doc').addEventListener('input', aoDigitarDocumento);
         $('cm-doc').addEventListener('blur', () => mostrarErroDocumento(true));

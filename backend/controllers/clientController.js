@@ -21,6 +21,7 @@ function lerCampos(body) {
         cep: vazioParaNulo(body.cep),
         endereco: vazioParaNulo(body.endereco),
         numero: vazioParaNulo(body.numero),
+        complemento: vazioParaNulo(body.complemento),
         bairro: vazioParaNulo(body.bairro),
         cidade: vazioParaNulo(body.cidade),
         estado: vazioParaNulo(body.estado)

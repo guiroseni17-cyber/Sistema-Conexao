@@ -33,6 +33,7 @@ CREATE TABLE clientes (
     celular VARCHAR(20) NULL,
     cep VARCHAR(12) NULL,
     numero VARCHAR(20) NULL,
+    complemento VARCHAR(100) NULL,
     bairro VARCHAR(100) NULL,
     cidade VARCHAR(100) NULL,
     estado VARCHAR(2) NULL,

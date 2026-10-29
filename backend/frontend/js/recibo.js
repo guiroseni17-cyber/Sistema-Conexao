@@ -43,7 +43,7 @@ function montarParcelas(pedido) {
 // Junta rua, número, bairro, cidade/UF e CEP (clientes antigos têm tudo só no campo endereço)
 function montarEndereco(p) {
     const cidadeUf = [p.cliente_cidade, p.cliente_estado].filter(Boolean).join('/');
-    return [p.cliente_endereco, p.cliente_numero, p.cliente_bairro, cidadeUf, p.cliente_cep ? 'CEP ' + p.cliente_cep : '']
+    return [p.cliente_endereco, p.cliente_numero, p.cliente_complemento, p.cliente_bairro, cidadeUf, p.cliente_cep ? 'CEP ' + p.cliente_cep : '']
         .filter(Boolean).join(', ');
 }
 

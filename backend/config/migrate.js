@@ -22,6 +22,7 @@ const COLUNAS = [
     ['clientes', 'celular', 'VARCHAR(20) NULL'],
     ['clientes', 'cep', 'VARCHAR(12) NULL'],
     ['clientes', 'numero', 'VARCHAR(20) NULL'],
+    ['clientes', 'complemento', 'VARCHAR(100) NULL'],
     ['clientes', 'bairro', 'VARCHAR(100) NULL'],
     ['clientes', 'cidade', 'VARCHAR(100) NULL'],
     ['clientes', 'estado', 'VARCHAR(2) NULL']
