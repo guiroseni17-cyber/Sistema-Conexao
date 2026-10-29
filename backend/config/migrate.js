@@ -53,6 +53,18 @@ const TABELAS = [
         preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
         ativo BOOLEAN DEFAULT TRUE,
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`,
+    // Metas do mês (tela "Meta do mês" e cartões do dashboard)
+    `CREATE TABLE IF NOT EXISTS metas_mensais (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        mes CHAR(7) NOT NULL,
+        nome VARCHAR(60) NOT NULL,
+        tipo ENUM('quantidade', 'valor') NOT NULL DEFAULT 'quantidade',
+        alvo DECIMAL(12,2) NOT NULL DEFAULT 0,
+        palavras VARCHAR(255) NULL,
+        categorias VARCHAR(120) NULL,
+        ordem INT NOT NULL DEFAULT 0,
+        UNIQUE KEY uq_meta_mes_nome (mes, nome)
     )`
 ];
 
