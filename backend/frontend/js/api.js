@@ -109,7 +109,13 @@ const api = {
     relatorios: {
         vendas: (inicio, fim) => apiRequest(`/relatorios/vendas?inicio=${inicio}&fim=${fim}`),
         compras: (inicio, fim) => apiRequest(`/relatorios/compras?inicio=${inicio}&fim=${fim}`)
+        
     },
+     metas: {
+        listar: (mes = '') => apiRequest(`/metas${mes ? `?mes=${mes}` : ''}`),
+        salvar: (mes, metas) => apiRequest(`/metas/${mes}`, { method: 'PUT', body: JSON.stringify({ metas }) })
+   
+     },
     usuarios: {
         listar: () => apiRequest('/usuarios'),
         vendedores: () => apiRequest('/usuarios/vendedores'),
@@ -158,4 +164,48 @@ document.addEventListener('DOMContentLoaded', () => {
     if (usuario && usuario.papel !== 'admin') {
         document.querySelectorAll('.somente-admin').forEach(el => el.style.display = 'none');
     }
+    // ---------- Metas do mês ----------
+function mesAtualLocal() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function nomeDoMes(mes, comAno = true) {
+    return new Date(mes + '-15T12:00:00').toLocaleDateString('pt-BR', comAno ? { month: 'long', year: 'numeric' } : { month: 'long' });
+}
+
+function formatarValorMeta(meta, valor) {
+    return meta.tipo === 'valor' ? formatarMoeda(valor) : String(Math.round(valor));
+}
+
+// Desenha os cartões de progresso (usado no Dashboard e na tela "Meta do mês")
+function renderizarCartoesMeta(metas) {
+    if (!metas.length) return '<div class="empty-state" style="grid-column:1/-1;">Nenhuma meta definida para este mês.</div>';
+    return metas.map(m => {
+        const pct = m.percentual;
+        const largura = pct === null ? 0 : Math.min(pct, 100);
+        const batida = pct !== null && pct >= 100;
+        const falta = Math.max(m.alvo - m.realizado, 0);
+        const rodape = m.alvo <= 0 ? 'Defina a meta para acompanhar'
+            : batida ? 'Meta batida! 🎉'
+            : `Faltam ${formatarValorMeta(m, falta)}`;
+        return `
+            <div class="meta-card ${batida ? 'meta-batida' : ''}">
+                <div class="meta-topo"><span class="meta-nome">${esc(m.nome)}</span><span class="meta-pct">${pct === null ? '—' : pct + '%'}</span></div>
+                <div class="meta-numeros"><strong>${formatarValorMeta(m, m.realizado)}</strong> de ${m.alvo > 0 ? formatarValorMeta(m, m.alvo) : 'sem meta'}</div>
+                <div class="meta-barra"><div class="meta-barra-fill" style="width:${largura}%"></div></div>
+                <div class="meta-rodape">${rodape}</div>
+            </div>`;
+    }).join('');
+}
+
+// Coloca "Meta do mês" no menu de todas as páginas (logo abaixo de Relatórios)
+document.addEventListener('DOMContentLoaded', () => {
+    const relatorios = document.querySelector('.sidebar a[href="relatorios.html"]');
+    if (!relatorios || document.querySelector('.sidebar a[href="metas.html"]')) return;
+    const link = document.createElement('a');
+    link.href = 'metas.html';
+    link.className = 'nav-item' + (window.location.pathname.endsWith('metas.html') ? ' active' : '');
+    link.innerHTML = '<span class="icon">🎯</span> Meta do mês';
+    relatorios.insertAdjacentElement('afterend', link);
 });
