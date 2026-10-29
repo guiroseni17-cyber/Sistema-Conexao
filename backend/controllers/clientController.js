@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { validarDocumento } = require('../documentos');
 
 // Data de nascimento sai como texto AAAA-MM-DD (evita deslocar o dia por fuso horário)
 const SELECT_CLIENTE = `SELECT *, DATE_FORMAT(data_nascimento, '%Y-%m-%d') AS data_nascimento FROM clientes`;
@@ -57,6 +58,8 @@ exports.criar = async (req, res) => {
     try {
         const c = lerCampos(req.body);
         if (!c.nome) return res.status(400).json({ erro: 'Nome é obrigatório' });
+        const doc = validarDocumento(c.cpf_cnpj);
+        if (!doc.valido) return res.status(400).json({ erro: doc.mensagem });
 
         const colunas = Object.keys(c);
         const [result] = await db.query(
@@ -73,6 +76,8 @@ exports.editar = async (req, res) => {
     try {
         const c = lerCampos(req.body);
         if (!c.nome) return res.status(400).json({ erro: 'Nome é obrigatório' });
+        const doc = validarDocumento(c.cpf_cnpj);
+        if (!doc.valido) return res.status(400).json({ erro: doc.mensagem });
 
         const colunas = Object.keys(c);
         await db.query(

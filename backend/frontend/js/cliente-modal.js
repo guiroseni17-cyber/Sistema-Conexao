@@ -32,6 +32,10 @@
     #cm-completo { background: #fff; color: #007bff; border: 1px solid #007bff; padding: 10px 15px !important; }
     #cm-salvar { background: #337ab7; color: #fff; border: none; font-weight: bold; padding: 10px 25px !important; }
     #cm-salvar[disabled] { opacity: .6; cursor: wait; }
+    .cm-msg { font-size: 11px; min-height: 0; color: #c0392b; }
+    .cm-msg.ok { color: #2e7d32; }
+    .cm-msg.info { color: #666; }
+    .cm-campo input.cm-invalido { border-color: #c0392b; background: #fdf3f2; }
     @media (max-width: 640px) { .cm-linha { flex-wrap: wrap; } .cm-linha > .cm-campo { flex: 1 1 100%; } .cm-check { padding-top: 0; } }
     `;
 
@@ -47,7 +51,7 @@
         <form id="cm-form" autocomplete="off">
             <div class="cm-linha">
                 ${campo('cm-f1', 'Tipo de pessoa', `<select id="cm-tipo"><option value="Física">Física</option><option value="Jurídica">Jurídica</option></select>`, 'cm-tipo')}
-                ${campo('cm-f2', '<span id="cm-lbl-doc">CPF</span>', `<input type="text" id="cm-doc" placeholder="Digite o documento...">`, 'cm-doc')}
+                ${campo('cm-f2', '<span id="cm-lbl-doc">CPF</span>', `<input type="text" id="cm-doc" placeholder="Digite o documento..." inputmode="numeric"><small class="cm-msg" id="cm-doc-msg"></small>`, 'cm-doc')}
                 <div class="cm-campo cm-f1"><label class="cm-check"><input type="checkbox" id="cm-consumidor" checked> Consumidor Final</label></div>
             </div>
             <div class="cm-linha">
@@ -63,7 +67,7 @@
             <fieldset>
                 <legend>Endereço e Localização</legend>
                 <div class="cm-linha">
-                    ${campo('cm-f1', 'CEP', `<input type="text" id="cm-cep" placeholder="00000-000">`, 'cm-cep')}
+                    ${campo('cm-f1', 'CEP', `<input type="text" id="cm-cep" placeholder="00000-000" inputmode="numeric"><small class="cm-msg" id="cm-cep-msg"></small>`, 'cm-cep')}
                     ${campo('cm-f3', 'Endereço', `<input type="text" id="cm-endereco" placeholder="Rua, Avenida, etc.">`, 'cm-endereco')}
                     ${campo('cm-f1', 'Número', `<input type="text" id="cm-numero" placeholder="Nº">`, 'cm-numero')}
                 </div>
@@ -91,6 +95,115 @@
         'cm-cidade': 'cidade', 'cm-estado': 'estado'
     };
 
+
+    // ---------- CPF / CNPJ ----------
+    // Confere os dígitos verificadores: pega números inventados ou digitados errados.
+    // (Só a Receita Federal confirma se o documento pertence mesmo a alguém.)
+    const soDigitos = (v) => String(v || '').replace(/\D/g, '');
+
+    function cpfValido(valor) {
+        const c = soDigitos(valor);
+        if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+        const dv = (n) => {
+            let soma = 0;
+            for (let i = 0; i < n; i++) soma += Number(c[i]) * (n + 1 - i);
+            const r = (soma * 10) % 11;
+            return r === 10 ? 0 : r;
+        };
+        return dv(9) === Number(c[9]) && dv(10) === Number(c[10]);
+    }
+
+    function cnpjValido(valor) {
+        const c = soDigitos(valor);
+        if (c.length !== 14 || /^(\d)\1{13}$/.test(c)) return false;
+        const dv = (n) => {
+            const pesos = n === 12 ? [5,4,3,2,9,8,7,6,5,4,3,2] : [6,5,4,3,2,9,8,7,6,5,4,3,2];
+            let soma = 0;
+            for (let i = 0; i < n; i++) soma += Number(c[i]) * pesos[i];
+            const r = soma % 11;
+            return r < 2 ? 0 : 11 - r;
+        };
+        return dv(12) === Number(c[12]) && dv(13) === Number(c[13]);
+    }
+
+    function mascaraDocumento(valor) {
+        const d = soDigitos(valor).slice(0, 14);
+        if (d.length <= 11) {
+            return d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2');
+        }
+        return d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+    }
+
+    // Devolve '' se estiver tudo certo (ou vazio: o documento é opcional), ou o texto do erro
+    function erroDocumento() {
+        const d = soDigitos($('cm-doc').value);
+        if (d.length === 0) return '';
+        if (d.length === 11) return cpfValido(d) ? '' : 'CPF inválido. Confira os números.';
+        if (d.length === 14) return cnpjValido(d) ? '' : 'CNPJ inválido. Confira os números.';
+        return 'Documento incompleto: o CPF tem 11 números e o CNPJ tem 14.';
+    }
+
+    function mostrarErroDocumento(final) {
+        const d = soDigitos($('cm-doc').value);
+        // Enquanto a pessoa ainda digita, só reclama quando o tamanho já fechou
+        let erro = erroDocumento();
+        if (!final && d.length !== 11 && d.length !== 14) erro = '';
+        const msg = $('cm-doc-msg');
+        msg.textContent = erro || (d.length === 11 || d.length === 14 ? (d.length === 11 ? 'CPF válido' : 'CNPJ válido') : '');
+        msg.className = 'cm-msg' + (erro ? '' : ' ok');
+        $('cm-doc').classList.toggle('cm-invalido', !!erro);
+        return erro;
+    }
+
+    function aoDigitarDocumento() {
+        const campoDoc = $('cm-doc');
+        campoDoc.value = mascaraDocumento(campoDoc.value);
+        const d = soDigitos(campoDoc.value);
+        // 11 números = pessoa física, 14 = jurídica: acerta o tipo sozinho
+        if (d.length === 11 && $('cm-tipo').value !== 'Física') { $('cm-tipo').value = 'Física'; atualizarRotuloDocumento(); }
+        if (d.length === 14 && $('cm-tipo').value !== 'Jurídica') { $('cm-tipo').value = 'Jurídica'; atualizarRotuloDocumento(); }
+        mostrarErroDocumento(false);
+    }
+
+    // ---------- CEP ----------
+    function mascaraCep(valor) {
+        const d = soDigitos(valor).slice(0, 8);
+        return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d;
+    }
+
+    let cepConsultado = '';
+    async function buscarCep() {
+        const cep = soDigitos($('cm-cep').value);
+        const msg = $('cm-cep-msg');
+        if (cep.length !== 8) { msg.textContent = ''; cepConsultado = ''; return; }
+        if (cep === cepConsultado) return;
+        cepConsultado = cep;
+        msg.className = 'cm-msg info';
+        msg.textContent = 'Buscando endereço...';
+        try {
+            const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const dados = await resp.json();
+            if (soDigitos($('cm-cep').value) !== cep) return; // a pessoa já mudou o CEP
+            if (dados.erro) {
+                msg.className = 'cm-msg';
+                msg.textContent = 'CEP não encontrado. Preencha o endereço à mão.';
+                return;
+            }
+            $('cm-endereco').value = dados.logradouro || $('cm-endereco').value;
+            $('cm-bairro').value = dados.bairro || $('cm-bairro').value;
+            $('cm-cidade').value = dados.localidade || $('cm-cidade').value;
+            if (dados.uf) $('cm-estado').value = dados.uf;
+            msg.className = 'cm-msg ok';
+            msg.textContent = 'Endereço preenchido';
+            // Falta só o número (ou a rua, se o CEP for geral da cidade)
+            ($('cm-endereco').value ? $('cm-numero') : $('cm-endereco')).focus();
+        } catch (err) {
+            cepConsultado = '';
+            msg.className = 'cm-msg';
+            msg.textContent = 'Não consegui buscar o CEP agora. Preencha o endereço à mão.';
+        }
+    }
+
     let fundo, form, estado = { id: null, aoSalvar: null };
     const $ = (id) => document.getElementById(id);
 
@@ -112,7 +225,11 @@
             // Ainda não existe uma tela de cadastro completo; leva para a lista de clientes.
             if (!/clientes\.html$/.test(window.location.pathname)) window.open('clientes.html', '_blank');
         });
-        $('cm-tipo').addEventListener('change', atualizarRotuloDocumento);
+        $('cm-tipo').addEventListener('change', () => { atualizarRotuloDocumento(); mostrarErroDocumento(false); });
+        $('cm-doc').addEventListener('input', aoDigitarDocumento);
+        $('cm-doc').addEventListener('blur', () => mostrarErroDocumento(true));
+        $('cm-cep').addEventListener('input', () => { $('cm-cep').value = mascaraCep($('cm-cep').value); buscarCep(); });
+        $('cm-cep').addEventListener('blur', buscarCep);
         form.addEventListener('submit', salvar);
     }
 
@@ -122,6 +239,9 @@
 
     function limpar() {
         form.reset();
+        cepConsultado = '';
+        ['cm-doc-msg', 'cm-cep-msg'].forEach(id => { $(id).textContent = ''; });
+        $('cm-doc').classList.remove('cm-invalido');
         $('cm-consumidor').checked = true;
         atualizarRotuloDocumento();
     }
@@ -135,6 +255,8 @@
         if (!$('cm-tipo').value) $('cm-tipo').value = 'Física';
         $('cm-consumidor').checked = c.consumidor_final === undefined || c.consumidor_final === null ? true : !!Number(c.consumidor_final);
         atualizarRotuloDocumento();
+        cepConsultado = soDigitos($('cm-cep').value); // cliente já cadastrado: não sobrescreve o endereço
+        if ($('cm-doc').value) { $('cm-doc').value = mascaraDocumento($('cm-doc').value); mostrarErroDocumento(false); }
     }
 
     function lerFormulario() {
@@ -164,6 +286,10 @@
 
     async function salvar(e) {
         e.preventDefault();
+        if (mostrarErroDocumento(true)) {
+            $('cm-doc').focus();
+            return;
+        }
         const dados = lerFormulario();
         const botao = $('cm-salvar');
         botao.disabled = true;
