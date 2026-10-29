@@ -149,8 +149,8 @@ exports.criar = async (req, res) => {
                     const precoVenda = Number(item.preco_venda) > 0 ? Number(item.preco_venda) : Number(m.preco_venda || 0);
                     const [novoProduto] = await connection.query(
                         `INSERT INTO produtos (nome, categoria, marca, modelo, imei, condicao, quantidade, estoque_minimo, preco_custo, preco_venda, origem, modelo_base_id)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'compra', ?)`,
-                        [m.nome, m.categoria, m.marca, m.modelo, imei, m.condicao, quantidade, precoCusto, precoVenda, m.id]
+                         VALUES (?, ?, ?, ?, ?, ?, ?, IF(? = 'acessorio', 2, 0), ?, ?, 'compra', ?)`,
+                        [m.nome, m.categoria, m.marca, m.modelo, imei, m.condicao, quantidade, m.categoria, precoCusto, precoVenda, m.id]
                     );
                     produtoId = novoProduto.insertId;
                 }
