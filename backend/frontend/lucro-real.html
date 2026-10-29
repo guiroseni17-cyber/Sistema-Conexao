@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strock Phone - Lucro real</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+    .abas { display:flex; gap:8px; margin-bottom:16px; }
+    .abas button { border:1px solid var(--border); background:var(--surface); border-radius:10px; padding:9px 16px; font-weight:600; font-size:13.5px; cursor:pointer; }
+    .abas button.ativa { background:var(--gradient-primary); color:#fff; border-color:transparent; }
+    .calculo { padding:6px 20px 14px; }
+    .calculo .linha { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); font-size:14px; }
+    .calculo .linha.final { border-bottom:0; font-weight:700; font-size:16px; padding-top:12px; }
+    .calculo .negativo { color:var(--destructive); }
+    .calculo .positivo { color:var(--green); }
+    .aviso { margin:0 0 16px; padding:12px 16px; border-radius:12px; background:rgba(233,171,43,.18); color:var(--warning-foreground); font-size:13.5px; }
+    .campo-recebido { width:120px; text-align:right; }
+    .form-lanc { padding:16px 20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end; }
+    .form-lanc .form-group { margin-bottom:0; }
+    .text-right { text-align:right; }
+</style>
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> Strock Phone</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="agenda.html" class="nav-item"><span class="icon">📅</span> Agenda</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <a href="lucro-real.html" class="nav-item somente-admin active"><span class="icon">💰</span> Lucro real</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="produtos-pai.html" class="nav-item"><span class="icon">🗂</span> Produtos pai</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Lucro real</div>
+                <div class="page-subtitle">Vendas, taxas, despesas e conciliação de contas do período</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="panel" style="margin-bottom:20px;">
+                <div style="padding:16px 20px; display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+                    <div class="form-group" style="margin-bottom:0;"><label>De</label><input type="date" id="data-inicio"></div>
+                    <div class="form-group" style="margin-bottom:0;"><label>Até</label><input type="date" id="data-fim"></div>
+                    <button class="btn btn-secondary" onclick="periodoMes(0)">Este mês</button>
+                    <button class="btn btn-secondary" onclick="periodoMes(-1)">Mês passado</button>
+                    <button class="btn btn-primary" onclick="carregarTudo()">Atualizar</button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card"><div class="label">Receita das vendas</div><div class="value" id="k-receita">--</div><div class="hint" id="k-pedidos"></div></div>
+                <div class="stat-card"><div class="label">Custo dos aparelhos vendidos</div><div class="value" id="k-cmv">--</div></div>
+                <div class="stat-card accent-amber"><div class="label">Taxas de pagamento</div><div class="value" id="k-taxas">--</div><div class="hint">das vendas já conciliadas</div></div>
+                <div class="stat-card accent-amber"><div class="label">Despesas</div><div class="value" id="k-despesas">--</div></div>
+                <div class="stat-card accent-green"><div class="label">Lucro real</div><div class="value" id="k-lucro">--</div><div class="hint" id="k-margem"></div></div>
+            </div>
+
+            <div id="aviso-pendente" class="aviso" style="display:none;"></div>
+
+            <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-header"><h3>Como o lucro real foi calculado</h3></div>
+                <div class="calculo" id="calculo"></div>
+            </div>
+
+            <div class="abas">
+                <button id="aba-vendas" class="ativa" onclick="mostrarAba('vendas')">Conciliar vendas</button>
+                <button id="aba-despesas" onclick="mostrarAba('despesas')">Despesas e contas</button>
+            </div>
+
+            <div id="painel-vendas">
+                <div class="panel">
+                    <div class="panel-header" style="gap:12px; flex-wrap:wrap;">
+                        <h3>Pagamentos das vendas</h3>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <select id="filtro-status" onchange="carregarPagamentos()">
+                                <option value="pendentes">Só pendentes</option>
+                                <option value="conciliados">Só conciliados</option>
+                                <option value="">Todos</option>
+                            </select>
+                            <button class="btn btn-secondary btn-sm" onclick="conciliarSelecionados()">Conciliar marcados (sem taxa)</button>
+                        </div>
+                    </div>
+                    <p class="text-muted" style="padding:0 20px 10px; font-size:13px; margin:0;">
+                        Confira no extrato do banco/maquininha quanto <b>realmente caiu</b> em cada venda e informe em "Recebido".
+                        A diferença para o valor da venda vira a taxa e entra no cálculo do lucro. Pix e dinheiro normalmente caem inteiros.
+                    </p>
+                    <table>
+                        <thead><tr>
+                            <th style="width:32px;"><input type="checkbox" id="marcar-todos" onchange="marcarTodos(this.checked)"></th>
+                            <th>Data</th><th>Pedido</th><th>Cliente</th><th>Forma</th>
+                            <th class="text-right">Valor da venda</th><th class="text-right">Recebido</th><th class="text-right">Taxa</th><th></th>
+                        </tr></thead>
+                        <tbody id="tabela-pagamentos"><tr><td colspan="9" class="text-muted">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="painel-despesas" style="display:none;">
+                <div class="panel" style="margin-bottom:20px;">
+                    <div class="panel-header"><h3>Novo lançamento</h3></div>
+                    <div class="form-lanc">
+                        <div class="form-group"><label>Tipo</label>
+                            <select id="l-tipo"><option value="despesa">Despesa (saída)</option><option value="receita">Outra entrada</option></select></div>
+                        <div class="form-group"><label>Descrição</label><input type="text" id="l-descricao" maxlength="150" placeholder="Ex.: Aluguel da loja"></div>
+                        <div class="form-group"><label>Categoria</label>
+                            <input type="text" id="l-categoria" list="categorias" maxlength="60" placeholder="Ex.: Aluguel">
+                            <datalist id="categorias"><option>Aluguel</option><option>Salários</option><option>Marketing</option><option>Impostos</option><option>Energia / Internet</option><option>Frete / Envio</option><option>Manutenção</option><option>Outros</option></datalist></div>
+                        <div class="form-group"><label>Valor (R$)</label><input type="text" id="l-valor" inputmode="decimal" placeholder="0,00"></div>
+                        <div class="form-group"><label>Data</label><input type="date" id="l-data"></div>
+                        <div class="form-group"><label>Conta</label><input type="text" id="l-conta" maxlength="60" placeholder="Ex.: Banco, Caixa"></div>
+                        <div class="form-group"><button class="btn btn-primary" onclick="salvarLancamento()">Salvar</button></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header"><h3>Despesas e entradas do período</h3></div>
+                    <table>
+                        <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Conta</th><th class="text-right">Valor</th><th>Conciliado</th><th></th></tr></thead>
+                        <tbody id="tabela-lancamentos"><tr><td colspan="7" class="text-muted">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/lucro-real.js"></script>
+</body>
+</html>

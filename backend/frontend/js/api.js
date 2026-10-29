@@ -116,6 +116,17 @@ const api = {
         salvar: (mes, metas) => apiRequest(`/metas/${mes}`, { method: 'PUT', body: JSON.stringify({ metas }) })
    
      },
+    financeiro: {
+        resumo: (inicio, fim) => apiRequest(`/financeiro/resumo?inicio=${inicio}&fim=${fim}`),
+        pagamentos: (inicio, fim, status = '') => apiRequest(`/financeiro/pagamentos?inicio=${inicio}&fim=${fim}&status=${status}`),
+        conciliar: (id, valor_recebido) => apiRequest(`/financeiro/pagamentos/${id}/conciliar`, { method: 'PUT', body: JSON.stringify({ valor_recebido }) }),
+        conciliarLote: (ids) => apiRequest('/financeiro/pagamentos/lote', { method: 'PUT', body: JSON.stringify({ ids }) }),
+        desfazer: (id) => apiRequest(`/financeiro/pagamentos/${id}/desfazer`, { method: 'PUT' }),
+        lancamentos: (inicio, fim) => apiRequest(`/financeiro/lancamentos?inicio=${inicio}&fim=${fim}`),
+        criarLancamento: (dados) => apiRequest('/financeiro/lancamentos', { method: 'POST', body: JSON.stringify(dados) }),
+        conciliarLancamento: (id, conciliado) => apiRequest(`/financeiro/lancamentos/${id}`, { method: 'PUT', body: JSON.stringify({ conciliado }) }),
+        excluirLancamento: (id) => apiRequest(`/financeiro/lancamentos/${id}`, { method: 'DELETE' })
+    },
     usuarios: {
         listar: () => apiRequest('/usuarios'),
         vendedores: () => apiRequest('/usuarios/vendedores'),

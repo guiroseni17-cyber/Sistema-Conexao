@@ -28,6 +28,13 @@ exports.vendas = async (req, res) => {
             WHERE p.status != 'cancelado' AND DATE(p.criado_em) BETWEEN ? AND ?
         `, [inicio, fim]);
 
+        // Frete soma e desconto subtrai do lucro (o valor do pedido já sai com eles aplicados)
+        const [[ajustes]] = await db.query(`
+            SELECT COALESCE(SUM(frete - desconto), 0) AS ajuste
+            FROM pedidos
+            WHERE status != 'cancelado' AND DATE(criado_em) BETWEEN ? AND ?
+        `, [inicio, fim]);
+
         const [formasPagamento] = await db.query(`
             SELECT COALESCE(forma_pagamento, 'Não informado') AS forma_pagamento,
                    COUNT(*) AS total_pedidos, COALESCE(SUM(valor_total), 0) AS valor
@@ -58,7 +65,7 @@ exports.vendas = async (req, res) => {
         res.json({
             periodo: { inicio, fim },
             ...resumo,
-            lucro_estimado: lucro.lucro_estimado,
+            lucro_estimado: Number(lucro.lucro_estimado) + Number(ajustes.ajuste),
             formasPagamento,
             produtosMaisVendidos,
             porVendedor

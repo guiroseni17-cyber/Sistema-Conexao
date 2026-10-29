@@ -29,7 +29,11 @@ const COLUNAS = [
     ['clientes', 'cidade', 'VARCHAR(100) NULL'],
     ['clientes', 'estado', 'VARCHAR(2) NULL'],
     // Observação livre de cada forma de pagamento (ex.: "12x de R$ 190")
-    ['pedido_pagamentos', 'observacao', 'VARCHAR(255) NULL']
+    ['pedido_pagamentos', 'observacao', 'VARCHAR(255) NULL'],
+    // Conciliação: quanto realmente caiu na conta (a diferença para o valor da venda é a taxa)
+    ['pedido_pagamentos', 'conciliado', 'BOOLEAN NOT NULL DEFAULT FALSE'],
+    ['pedido_pagamentos', 'valor_recebido', 'DECIMAL(10,2) NULL'],
+    ['pedido_pagamentos', 'conciliado_em', 'DATETIME NULL']
 ];
 
 // Tabelas novas (criadas só se ainda não existirem)
@@ -67,6 +71,19 @@ const TABELAS = [
         categorias VARCHAR(120) NULL,
         ordem INT NOT NULL DEFAULT 0,
         UNIQUE KEY uq_meta_mes_nome (mes, nome)
+    )`,
+    // Despesas e outras entradas lançadas na tela "Lucro real" (aluguel, salários, etc.)
+    `CREATE TABLE IF NOT EXISTS lancamentos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tipo ENUM('despesa', 'receita') NOT NULL DEFAULT 'despesa',
+        descricao VARCHAR(150) NOT NULL,
+        categoria VARCHAR(60) NULL,
+        valor DECIMAL(10,2) NOT NULL DEFAULT 0,
+        data DATE NOT NULL,
+        conta VARCHAR(60) NULL,
+        conciliado BOOLEAN NOT NULL DEFAULT FALSE,
+        usuario_id INT NULL,
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
 ];
 

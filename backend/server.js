@@ -19,6 +19,7 @@ const supplierRoutes = require('./routes/suppliers');
 const purchaseRoutes = require('./routes/purchases');
 const reportRoutes = require('./routes/reports');
 const metaRoutes = require('./routes/metas');
+const financeRoutes = require('./routes/finance');
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/fornecedores', supplierRoutes);
 app.use('/api/compras', purchaseRoutes);
 app.use('/api/relatorios', reportRoutes);
 app.use('/api/metas', metaRoutes);
+app.use('/api/financeiro', financeRoutes);
 
 app.get('/api', (req, res) => {
     res.json({ sistema: 'Strock Phone API', status: 'online' });
