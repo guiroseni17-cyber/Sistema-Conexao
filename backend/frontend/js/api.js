@@ -211,3 +211,40 @@ document.addEventListener('DOMContentLoaded', () => {
     link.innerHTML = '<span class="icon">🎯</span> Meta do mês';
     relatorios.insertAdjacentElement('afterend', link);
 });
+
+
+// ---------- Permissões por tipo de login ----------
+// Vendedor só entra nestas páginas (Dashboard, Agenda, Pedidos de venda, Meta, Estoque).
+// Todo o resto é só para administrador. A API também bloqueia (isto aqui é só a parte visual).
+const PAGINAS_VENDEDOR = [
+    'index.html', 'agenda.html', 'pedidos.html', 'novo-pedido.html', 'recibo.html', 'termo-troca.html',
+    'metas.html', 'produtos.html', 'minha-conta.html', 'login.html'
+];
+
+(function protegerPorPapel() {
+    const usuario = getUsuarioLogado();
+    if (!usuario || usuario.papel === 'admin') return;
+    const pagina = window.location.pathname.split('/').pop() || 'index.html';
+    if (!PAGINAS_VENDEDOR.includes(pagina)) window.location.replace('index.html');
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+    const usuario = getUsuarioLogado();
+    if (!usuario || usuario.papel === 'admin') return;
+
+    // Esconde do menu (e da barra do recibo) o que vendedor não pode abrir
+    document.querySelectorAll('.sidebar a.nav-item, .rec-nav a').forEach(a => {
+        const destino = (a.getAttribute('href') || '').split('?')[0];
+        if (destino && destino !== '#' && !PAGINAS_VENDEDOR.includes(destino)) a.style.display = 'none';
+    });
+
+    // Esconde títulos de seção que ficaram sem nenhum item (ex.: "Cadastros")
+    document.querySelectorAll('.sidebar .nav-section-label').forEach(rotulo => {
+        let el = rotulo.nextElementSibling, algumVisivel = false;
+        while (el && !el.classList.contains('nav-section-label') && !el.classList.contains('sidebar-footer')) {
+            if (el.style.display !== 'none') algumVisivel = true;
+            el = el.nextElementSibling;
+        }
+        if (!algumVisivel) rotulo.style.display = 'none';
+    });
+});

@@ -11,7 +11,11 @@ async function carregarDashboard() {
         cards[1].textContent = dados.pedidosHoje;
         cards[2].textContent = dados.totalUnidadesEstoque || 0;
         cards[3].textContent = dados.totalClientes;
-        cards[4].textContent = formatarMoeda(dados.comprasAPagar);
+        if (dados.comprasAPagar === null || dados.comprasAPagar === undefined) {
+            cards[4].closest('.stat-card').style.display = 'none'; // vendedor não vê o financeiro de compras
+        } else {
+            cards[4].textContent = formatarMoeda(dados.comprasAPagar);
+        }
 
         const listaPedidos = document.getElementById('ultimos-pedidos');
         listaPedidos.innerHTML = dados.ultimosPedidos.length

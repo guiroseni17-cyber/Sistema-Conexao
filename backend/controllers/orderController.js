@@ -549,7 +549,7 @@ exports.dashboard = async (req, res) => {
             totalClientes: totalClientes.total || 0,
             estoqueBaixo,
             ultimosPedidos,
-            comprasAPagar: comprasAPagar.total || 0
+            comprasAPagar: req.user?.papel === 'admin' ? (comprasAPagar.total || 0) : null
         });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao carregar dashboard', detalhe: err.message });

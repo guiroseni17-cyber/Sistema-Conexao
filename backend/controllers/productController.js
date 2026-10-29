@@ -25,6 +25,8 @@ exports.listar = async (req, res) => {
         sql += ' ORDER BY (p.quantidade > 0) DESC, p.criado_em DESC';
 
         const [rows] = await db.query(sql, params);
+        // Preço de custo é informação só do administrador
+        if (req.user?.papel !== 'admin') rows.forEach(r => delete r.preco_custo);
         res.json(rows);
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao listar produtos', detalhe: err.message });
@@ -36,6 +38,7 @@ exports.buscarPorId = async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM produtos WHERE id = ?', [req.params.id]);
         if (rows.length === 0) return res.status(404).json({ erro: 'Produto não encontrado' });
+        if (req.user?.papel !== 'admin') delete rows[0].preco_custo;
         res.json(rows[0]);
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao buscar produto', detalhe: err.message });
