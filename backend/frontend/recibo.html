@@ -27,12 +27,9 @@
 
     .rec-corpo { padding: 24px 30px 30px; }
 
-    /* Cartões */
-    .rec-cartoes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-    .cartao { background: var(--cor-fundo-suave); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 14px 16px; }
-    .cartao h3 { margin: 0 0 10px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--cor-destaque); }
-    #r-cliente { display: flex; flex-direction: column; gap: 5px; }
-    #r-cliente div { grid-column: auto !important; }
+    /* Dados do cliente (bloco compacto, 2 colunas) */
+    #r-cliente { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 24px; background: var(--cor-fundo-suave); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+    #r-cliente div:last-child { grid-column: 1 / -1; }
     #r-cliente b { color: #666; font-size: 10.5px; text-transform: uppercase; margin-right: 4px; }
 
     .secao-titulo { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--cor-destaque); font-weight: 700; margin: 0 0 8px; }
@@ -47,8 +44,11 @@
     .rec .num { text-align: right; white-space: nowrap; }
     #tabela-itens { margin-bottom: 20px; }
 
-    /* Total do pedido (uma linha só) */
-    .rec-total { display: flex; justify-content: flex-end; align-items: baseline; gap: 14px; margin: 0 0 14px; padding-top: 8px; border-top: 2px solid var(--cor-principal); color: var(--cor-principal); }
+    /* Pagamento: parcelas pequenas à esquerda, total à direita (abaixo dos itens) */
+    .rec-pagto { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 14px; }
+    .rec-pagto table { width: 62%; font-size: 11px; }
+    .rec-pagto th, .rec-pagto td { padding: 3px 8px; }
+    .rec-total { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; color: var(--cor-principal); }
     .rec-total b { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #666; }
     .rec-total span { font-size: 17px; font-weight: 700; }
 
@@ -68,7 +68,10 @@
     .rec-acoes { text-align: center; margin-top: 20px; }
 
     @media (max-width: 640px) {
-        .rec-cartoes { grid-template-columns: 1fr; }
+        #r-cliente { grid-template-columns: 1fr; }
+        .rec-pagto { flex-direction: column; }
+        .rec-pagto table { width: 100%; }
+        .rec-total { align-items: flex-start; }
         .rec-topo { flex-direction: column; align-items: flex-start; }
         .rec-pedido { text-align: left; }
     }
@@ -86,9 +89,10 @@
         .rec-marca img { width: 48px; height: 48px; }
         .rec-pedido h1 { font-size: 22px; }
         .rec-corpo { padding: 12px 20px 10px; }
-        .rec-cartoes { margin-bottom: 10px; gap: 12px; }
-        .cartao { padding: 10px 12px; }
-        #r-cliente { gap: 2px; }
+        #r-cliente { margin-bottom: 8px; padding: 6px 12px; }
+        .rec-pagto { margin-bottom: 8px; }
+        .rec-pagto table { font-size: 10px; }
+        .rec-pagto th, .rec-pagto td { padding: 2px 6px; }
         .rec td { padding: 4px 8px; }
         #tabela-itens { margin-bottom: 10px; }
         .rec-assinaturas { margin-top: 28px; }
@@ -129,23 +133,10 @@
 
         <div class="rec-corpo">
 
-            <div class="rec-cartoes">
-                <div class="cartao">
-                    <h3>Cliente</h3>
-                    <div id="r-cliente"></div>
-                </div>
-                <div class="cartao">
-                    <h3>Pagamento</h3>
-                    <table>
-                        <thead>
-                            <tr><th>Parcela</th><th>Data</th><th class="num">Valor</th><th>Forma</th></tr>
-                        </thead>
-                        <tbody id="r-parcelas"></tbody>
-                    </table>
-                </div>
-            </div>
+            <p class="secao-titulo">Dados do cliente</p>
+            <div id="r-cliente"></div>
 
-            <p class="secao-titulo">Itens do pedido</p>
+            <p class="secao-titulo">Dados do pedido</p>
             <table id="tabela-itens">
                 <thead>
                     <tr><th>Descrição</th><th class="num">Qtde.</th><th class="num">V. unit.</th><th class="num">V. total</th></tr>
@@ -153,7 +144,16 @@
                 <tbody id="r-itens"></tbody>
             </table>
 
-            <div class="rec-total" id="r-total"></div>
+            <p class="secao-titulo">Pagamento</p>
+            <div class="rec-pagto">
+                <table>
+                    <thead>
+                        <tr><th>Parcela</th><th>Data</th><th class="num">Valor</th><th>Forma</th></tr>
+                    </thead>
+                    <tbody id="r-parcelas"></tbody>
+                </table>
+                <div class="rec-total" id="r-total"></div>
+            </div>
 
             <div class="rec-obs" id="r-obs-bloco" style="display:none;">
                 <p class="secao-titulo">Observações</p>
