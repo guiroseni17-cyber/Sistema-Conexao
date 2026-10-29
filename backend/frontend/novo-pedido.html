@@ -129,6 +129,12 @@
         .linha-pagamento .pag-obs { min-height: 44px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; width: 100%; }
         .linha-pagamento .pag-obs:focus { outline: none; border-color: var(--navy-light); box-shadow: 0 0 0 3px rgba(29,36,64,.10); }
         @media (max-width: 1100px) and (min-width: 761px) { .linha-pagamento { grid-template-columns: minmax(0, 1fr) 150px; } .linha-pagamento .pag-obs { grid-column: 1 / -1; } }
+        #upMais { margin-top: 4px; }
+        .up-resumo-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--green); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+        .up-resumo-item strong { display: block; font-size: 14px; }
+        .up-resumo-item span.det { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+        .up-resumo-item .tag { font-size: 11.5px; font-weight: 700; color: var(--green); background: rgba(28,152,90,.10); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+        .up-confirmar { display: flex; justify-content: flex-end; margin-top: 14px; }
         @media (max-width: 900px) {
             .venda .form-row.linha-cliente, .totais-wrap, .pag-topo { grid-template-columns: 1fr; }
         }
@@ -288,12 +294,16 @@
                         <strong>Upgrades</strong>
                         <span>Aparelho recebido como forma de pagamento</span>
                     </div>
-                    <button type="button" id="btnRemoverUpgrade" class="btn-remover-upgrade">Fechar busca</button>
+                    <button type="button" id="btnRemoverUpgrade" class="btn-remover-upgrade">Remover upgrade</button>
                 </div>
 
                 <p id="avisoUpgrade" style="display:none; background:#fff7e6; border:1px solid #f0d9a8; padding:8px 10px; border-radius:6px; font-size:12.5px;">
                     Este aparelho já foi registrado no estoque ao salvar o pedido.
                 </p>
+
+                <!-- Aparelhos já confirmados neste upgrade -->
+                <div id="upResumoLista"></div>
+                <button type="button" id="upMais" class="btn-add" style="display:none;">+ Cadastrar mais um aparelho</button>
 
                 <!-- Etapa 1: buscar o aparelho -->
                 <div id="upBuscaBox">
@@ -301,6 +311,7 @@
                     <div id="upContagem" class="up-contagem"></div>
                     <div id="upLista" class="up-lista"></div>
                     <a href="#" id="upManual" class="up-link">Não encontrou na lista? Digitar o aparelho manualmente</a>
+                    <a href="#" id="upCancelarNovo" class="up-link" style="display:none; margin-left:14px;">Cancelar este aparelho</a>
                 </div>
 
                 <!-- Etapa 2: dados do aparelho escolhido -->
@@ -396,6 +407,7 @@
                         <p class="upgrade-dica" style="margin-top:10px;">
                             Abate do pedido: <strong id="upAbate">R$ 0,00</strong> (preço de compra − desconto). Esse valor também vira o custo do aparelho no estoque.
                         </p>
+                        <div class="up-confirmar"><button type="button" id="upConfirmar" class="btn-acao">Confirmar aparelho</button></div>
                     </div>
                 </div>
             </div>

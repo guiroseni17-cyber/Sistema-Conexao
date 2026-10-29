@@ -4,6 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const pedidoEditId = new URLSearchParams(window.location.search).get("id");
     let pedidoEditando = null; // guarda o pedido carregado quando estamos editando
     let upgradeAtivo = false;  // true quando o cartão de upgrade está aberto
+    let upgrades = [];         // aparelhos já confirmados nesta tela (ainda não salvos)
+    let trocasSalvas = [];     // aparelhos que o pedido editado já tinha (somente leitura)
+    let etapaAtual = "busca";  // busca | dados | lista
 
     // N° do pedido: o número real, igual ao da lista de pedidos
     async function definirNumeroPedido() {
@@ -278,9 +281,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const brl = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
     // Quanto o upgrade abate do pedido: preço de compra - desconto
+    function abateFormulario() {
+        return etapaAtual === "dados" ? Math.max(0, numUp("upCompra") - numUp("upDesconto")) : 0;
+    }
+    // Soma de todos os aparelhos: já salvos + confirmados + o que está sendo preenchido
     function valorAbatidoUpgrade() {
         if (!upgradeAtivo) return 0;
-        return Math.max(0, numUp("upCompra") - numUp("upDesconto"));
+        const lista = [...trocasSalvas, ...upgrades].reduce((s, t) => s + Number(t.valor_abatido || 0), 0);
+        return lista + abateFormulario();
     }
 
     function erroCompra(mostrar) {
@@ -289,8 +297,51 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function etapaUpgrade(etapa) {
+        etapaAtual = etapa;
         upBuscaBox.style.display = etapa === "busca" ? "block" : "none";
         upSelecionado.style.display = etapa === "dados" ? "block" : "none";
+        document.getElementById("upMais").style.display = etapa === "lista" ? "inline-block" : "none";
+        document.getElementById("upCancelarNovo").style.display =
+            (etapa === "busca" && (upgrades.length + trocasSalvas.length) > 0) ? "inline" : "none";
+        renderizarResumoUpgrade();
+    }
+
+    // Lista dos aparelhos já confirmados (cada um com seu valor de abatimento)
+    function renderizarResumoUpgrade() {
+        const box = document.getElementById("upResumoLista");
+        box.innerHTML = "";
+        [...trocasSalvas, ...upgrades].forEach((t) => {
+            const item = document.createElement("div");
+            item.className = "up-resumo-item";
+            const info = document.createElement("div");
+            const nome = document.createElement("strong");
+            nome.textContent = t.nome || "Aparelho";
+            const det = document.createElement("span");
+            det.className = "det";
+            det.textContent = [t.imei ? `IMEI ${t.imei}` : "", `Abate ${brl(t.valor_abatido)}`].filter(Boolean).join("  ·  ");
+            info.append(nome, det);
+            item.appendChild(info);
+            if (t.salvo) {
+                const tag = document.createElement("span");
+                tag.className = "tag";
+                tag.textContent = "Já está no estoque";
+                item.appendChild(tag);
+            } else {
+                const x = document.createElement("button");
+                x.type = "button";
+                x.className = "up-x";
+                x.title = "Remover este aparelho";
+                x.textContent = "✕";
+                x.addEventListener("click", () => {
+                    upgrades = upgrades.filter(u => u !== t);
+                    if (!upgrades.length && !trocasSalvas.length && etapaAtual === "lista") etapaUpgrade("busca");
+                    else renderizarResumoUpgrade();
+                    calcularTotais();
+                });
+                item.appendChild(x);
+            }
+            box.appendChild(item);
+        });
     }
 
     // Catálogo do upgrade = variações dos PRODUTOS PAI (referência). Não é o estoque:
@@ -390,6 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function mostrarUpgrade(ativo) {
         upgradeAtivo = ativo;
+        if (!ativo) upgrades = [];
         cardUpgrade.style.display = ativo ? "block" : "none";
         btnAddUpgrade.style.display = ativo ? "none" : "inline-block";
         limparUpgrade();
@@ -404,7 +456,32 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarUpgrade(true);
         upBusca.focus();
     });
-    document.getElementById("btnRemoverUpgrade").addEventListener("click", () => mostrarUpgrade(false));
+    document.getElementById("btnRemoverUpgrade").addEventListener("click", () => {
+        if (upgrades.length && !confirm("Remover o upgrade e todos os aparelhos já cadastrados nele?")) return;
+        mostrarUpgrade(false);
+    });
+
+    // Confirma o aparelho preenchido, guarda na lista e libera o cadastro de mais um
+    document.getElementById("upConfirmar").addEventListener("click", () => {
+        const t = lerUpgrade();
+        if (t === false) return;
+        upgrades.push(t);
+        limparUpgrade();
+        etapaUpgrade("lista");
+        calcularTotais();
+    });
+    document.getElementById("upMais").addEventListener("click", () => {
+        limparUpgrade();
+        etapaUpgrade("busca");
+        renderizarListaUpgrade();
+        upBusca.focus();
+    });
+    document.getElementById("upCancelarNovo").addEventListener("click", (e) => {
+        e.preventDefault();
+        limparUpgrade();
+        etapaUpgrade("lista");
+        calcularTotais();
+    });
     upBusca.addEventListener("input", renderizarListaUpgrade);
     document.getElementById("upManual").addEventListener("click", (e) => {
         e.preventDefault();
@@ -423,17 +500,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     document.getElementById("upCompra").addEventListener("input", () => erroCompra(false));
     cardUpgrade.addEventListener("input", () => {
-        document.getElementById("upAbate").textContent = brl(valorAbatidoUpgrade());
+        document.getElementById("upAbate").textContent = brl(abateFormulario());
         calcularTotais();
     });
     containerParcelas.addEventListener("input", calcularTotais);
     qtdPagamentoInput.addEventListener("input", calcularTotais);
 
-    // Lê o aparelho do upgrade. Retorna: null (sem upgrade), false (dados inválidos) ou o objeto da troca.
+    // Lê o aparelho que está no formulário. Retorna false (dados inválidos) ou o objeto da troca.
     function lerUpgrade() {
-        if (!upgradeAtivo) return null;
-        // Se o pedido editado já tem upgrade registrado, não envia de novo
-        if (pedidoEditando && pedidoEditando.trocas && pedidoEditando.trocas.length > 0) return null;
 
         let base;
         if (upManual) {
@@ -495,6 +569,23 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
+    // Todos os aparelhos novos do pedido: os confirmados + o que estiver preenchido na tela.
+    // Retorna a lista (pode ser vazia) ou false se algo estiver inválido.
+    function coletarUpgrades() {
+        if (!upgradeAtivo) return [];
+        const lista = [...upgrades];
+        if (etapaAtual === "dados") {
+            const t = lerUpgrade();
+            if (t === false) return false;
+            lista.push(t);
+        } else if (etapaAtual === "busca" && !lista.length && !trocasSalvas.length) {
+            alert("Escolha o aparelho do upgrade na lista (ou digite o aparelho manualmente).");
+            upBusca.focus();
+            return false;
+        }
+        return lista;
+    }
+
     // ENVIO DO PEDIDO — isso que faltava por completo
     document.getElementById("formNovoPedido").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -544,9 +635,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 observacoes: observacoes.trim() || null
             };
 
-            const troca = lerUpgrade();
-            if (troca === false) return;
-            if (troca) dados.troca = troca;
+            const trocasNovas = coletarUpgrades();
+            if (trocasNovas === false) return;
+            if (trocasNovas.length) dados.trocas = trocasNovas;
 
             let resultado;
             if (pedidoEditando) {
@@ -556,7 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert(`Pedido #${pedidoEditando.id} atualizado com sucesso.`);
             } else {
                 resultado = await api.pedidos.criar(dados);
-                alert(`Pedido #${resultado.id} criado com sucesso.` + (dados.troca ? "\nO aparelho do upgrade já entrou no estoque." : ""));
+                alert(`Pedido #${resultado.id} criado com sucesso.` + (dados.trocas ? (dados.trocas.length > 1 ? "\nOs aparelhos do upgrade já entraram no estoque." : "\nO aparelho do upgrade já entrou no estoque.") : ""));
             }
             window.location.href = 'pedidos.html';
         } catch (err) {
@@ -621,31 +712,14 @@ document.addEventListener("DOMContentLoaded", () => {
             // Observações
             document.getElementById("obsPedido").value = pedido.observacoes || "";
 
-            // Upgrade já registrado: mostra os dados e trava os campos
+            // Upgrade já registrado: mostra os aparelhos salvos (somente leitura); dá para cadastrar mais
             if (pedido.trocas && pedido.trocas.length > 0) {
-                const t = pedido.trocas[0];
+                trocasSalvas = pedido.trocas.map(t => ({
+                    nome: t.produto_nome, imei: t.imei, valor_abatido: Number(t.valor_abatido || 0), salvo: true
+                }));
                 mostrarUpgrade(true);
-                const garantiaSel = document.getElementById("upGarantia");
-                if (t.garantia && !Array.from(garantiaSel.options).some(o => o.value === t.garantia)) {
-                    garantiaSel.add(new Option(t.garantia, t.garantia));
-                }
-                document.getElementById("upTituloTxt").textContent = t.produto_nome || "";
-                document.getElementById("upCompra").value = Number(t.preco_compra != null ? t.preco_compra : t.valor_abatido).toFixed(2);
-                document.getElementById("upDesconto").value = Number(t.desconto || 0) > 0 ? Number(t.desconto).toFixed(2) : "";
-                if (t.garantia) garantiaSel.value = t.garantia;
-                document.getElementById("upBateria").value = t.bateria != null ? t.bateria : "";
-                document.getElementById("upImei").value = t.imei || "";
-                document.getElementById("upImei2").value = t.imei2 || "";
-                document.getElementById("upSerial").value = t.numero_serie || "";
-                document.getElementById("upVenda").value = Number(t.preco_venda || 0) > 0 ? Number(t.preco_venda).toFixed(2) : "";
-                document.getElementById("upVendaAtacado").value = t.preco_venda_atacado != null ? Number(t.preco_venda_atacado).toFixed(2) : "";
-                document.getElementById("upObs").value = t.observacoes || "";
-                document.getElementById("upAbate").textContent = brl(t.valor_abatido);
-                etapaUpgrade("dados");
-                document.getElementById("upTrocar").style.display = "none";
-                cardUpgrade.querySelectorAll("input, select, textarea").forEach(el => el.disabled = true);
+                etapaUpgrade("lista");
                 document.getElementById("btnRemoverUpgrade").style.display = "none";
-                document.getElementById("avisoUpgrade").style.display = "block";
             }
 
             calcularTotais();

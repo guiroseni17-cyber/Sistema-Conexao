@@ -209,7 +209,7 @@ exports.criar = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const { cliente_id, pagamentos, itens, troca, observacoes, data_pedido, agendado, vendedor_id } = req.body;
+        const { cliente_id, pagamentos, itens, troca, trocas, observacoes, data_pedido, agendado, vendedor_id } = req.body;
 
         if (!cliente_id || !itens || itens.length === 0) {
             await connection.rollback();
@@ -221,7 +221,9 @@ exports.criar = async (req, res) => {
             valorTotal += item.quantidade * item.preco_unitario;
         }
 
-        const valorTroca = calcularValorTroca(troca);
+        // Aceita vários aparelhos na troca ("trocas") ou um só ("troca", formato antigo)
+        const listaTrocas = (Array.isArray(trocas) ? trocas : [troca]).filter(t => t && t.nome);
+        const valorTroca = listaTrocas.reduce((soma, t) => soma + calcularValorTroca(t), 0);
         const valorAPagar = valorTotal - valorTroca;
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
@@ -272,8 +274,8 @@ exports.criar = async (req, res) => {
             );
         }
 
-        if (troca && troca.nome) {
-            await registrarTroca(connection, pedidoId, troca, req.user?.id);
+        for (const t of listaTrocas) {
+            await registrarTroca(connection, pedidoId, t, req.user?.id);
         }
 
         await connection.commit();
@@ -283,7 +285,8 @@ exports.criar = async (req, res) => {
             valor_troca: valorTroca,
             valor_a_pagar: valorAPagar,
             mensagem: (agendado ? 'Pedido agendado com sucesso. ' : 'Pedido criado com sucesso. ') +
-                (troca && troca.nome ? 'Aparelho recebido em troca já cadastrado no estoque.' : '')
+                (listaTrocas.length === 1 ? 'Aparelho recebido em troca já cadastrado no estoque.'
+                    : listaTrocas.length > 1 ? 'Aparelhos recebidos em troca já cadastrados no estoque.' : '')
         });
 
     } catch (err) {
@@ -384,13 +387,11 @@ exports.editar = async (req, res) => {
 
         let valorTrocaFinal = Number(valor_troca || 0);
 
-        // Upgrade adicionado durante a edição (só se o pedido ainda não tinha troca)
-        const { troca } = req.body;
-        const [trocasExistentes] = await connection.query(
-            'SELECT id FROM pedido_trocas WHERE pedido_id = ?', [pedidoId]
-        );
-        if (troca && troca.nome && trocasExistentes.length === 0) {
-            valorTrocaFinal = await registrarTroca(connection, pedidoId, troca, req.user?.id);
+        // Aparelhos de upgrade adicionados durante a edição (somam aos que já estavam no pedido)
+        const { troca, trocas } = req.body;
+        const novasTrocas = (Array.isArray(trocas) ? trocas : [troca]).filter(t => t && t.nome);
+        for (const t of novasTrocas) {
+            valorTrocaFinal += await registrarTroca(connection, pedidoId, t, req.user?.id);
         }
         const valorAPagar = valorTotal - valorTrocaFinal;
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
