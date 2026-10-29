@@ -41,3 +41,19 @@ async function carregarDashboard() {
 }
 
 carregarDashboard();
+
+
+async function carregarMetasDashboard() {
+    const caixa = document.getElementById('metas-dashboard');
+    const mes = mesAtualLocal();
+    document.getElementById('titulo-metas').textContent = 'Meta do mês · ' + nomeDoMes(mes, false);
+    try {
+        const r = await api.metas.listar(mes);
+        caixa.innerHTML = renderizarCartoesMeta(r.metas);
+    } catch (err) {
+        caixa.innerHTML = '<div class="text-muted">Não foi possível carregar as metas.</div>';
+        console.error('Erro ao carregar metas:', err);
+    }
+}
+
+carregarMetasDashboard();
