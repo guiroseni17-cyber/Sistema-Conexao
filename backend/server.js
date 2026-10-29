@@ -18,6 +18,7 @@ const orderRoutes = require('./routes/orders');
 const supplierRoutes = require('./routes/suppliers');
 const purchaseRoutes = require('./routes/purchases');
 const reportRoutes = require('./routes/reports');
+const metaRoutes = require('./routes/metas');
 
 const app = express();
 
