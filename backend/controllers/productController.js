@@ -161,7 +161,8 @@ exports.editar = async (req, res) => {
         await db.query(
             `UPDATE produtos SET nome=?, categoria=?, marca=?, modelo=?, imei=?, condicao=?,
              quantidade=?, estoque_minimo=?, preco_custo=?, preco_venda=?, observacoes=? WHERE id=?`,
-            [nome, categoria, marca, modelo, imei, condicao, quantidade, estoque_minimo ?? 2,
+   [nome, categoria, marca, modelo, imei, condicao, quantidade,
+             categoria === 'acessorio' ? (estoque_minimo ?? 2) : 0,
              preco_custo, preco_venda, observacoes, req.params.id]
         );
 
