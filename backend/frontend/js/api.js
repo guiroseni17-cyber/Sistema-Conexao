@@ -164,7 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (usuario && usuario.papel !== 'admin') {
         document.querySelectorAll('.somente-admin').forEach(el => el.style.display = 'none');
     }
-    // ---------- Metas do mês ----------
+});
+
+// ---------- Metas do mês ----------
 function mesAtualLocal() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
