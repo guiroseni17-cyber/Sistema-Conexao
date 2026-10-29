@@ -26,6 +26,16 @@ CREATE TABLE clientes (
     cpf_cnpj VARCHAR(20),
     email VARCHAR(150),
     endereco VARCHAR(255),
+    tipo_pessoa VARCHAR(10) NOT NULL DEFAULT 'Física',
+    consumidor_final BOOLEAN NOT NULL DEFAULT TRUE,
+    data_nascimento DATE NULL,
+    genero VARCHAR(20) NULL,
+    celular VARCHAR(20) NULL,
+    cep VARCHAR(12) NULL,
+    numero VARCHAR(20) NULL,
+    bairro VARCHAR(100) NULL,
+    cidade VARCHAR(100) NULL,
+    estado VARCHAR(2) NULL,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

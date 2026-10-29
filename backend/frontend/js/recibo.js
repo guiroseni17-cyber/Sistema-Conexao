@@ -40,6 +40,13 @@ function montarParcelas(pedido) {
     return linhas;
 }
 
+// Junta rua, número, bairro, cidade/UF e CEP (clientes antigos têm tudo só no campo endereço)
+function montarEndereco(p) {
+    const cidadeUf = [p.cliente_cidade, p.cliente_estado].filter(Boolean).join('/');
+    return [p.cliente_endereco, p.cliente_numero, p.cliente_bairro, cidadeUf, p.cliente_cep ? 'CEP ' + p.cliente_cep : '']
+        .filter(Boolean).join(', ');
+}
+
 async function carregarRecibo() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -65,8 +72,8 @@ async function carregarRecibo() {
             <div><b>Nome:</b> ${esc(pedido.cliente_nome)}</div>
             <div><b>CPF/CNPJ:</b> ${esc(pedido.cliente_cpf_cnpj || '-')}</div>
             <div><b>E-mail:</b> ${esc(pedido.cliente_email || '-')}</div>
-            <div><b>Telefone:</b> ${esc(pedido.cliente_telefone || '-')}</div>
-            <div><b>Endereço:</b> ${esc(pedido.cliente_endereco || '-')}</div>
+            <div><b>Telefone:</b> ${esc([pedido.cliente_celular, pedido.cliente_telefone].filter(Boolean).join(' / ') || '-')}</div>
+            <div><b>Endereço:</b> ${esc(montarEndereco(pedido) || '-')}</div>
         `;
 
         // Itens

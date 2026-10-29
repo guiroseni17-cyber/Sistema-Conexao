@@ -145,7 +145,10 @@ exports.buscarPorId = async (req, res) => {
         const [pedido] = await db.query(`
             SELECT p.*, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
                    c.cpf_cnpj AS cliente_cpf_cnpj, c.email AS cliente_email,
-                   c.endereco AS cliente_endereco, u.nome AS vendedor_nome
+                   c.endereco AS cliente_endereco, c.celular AS cliente_celular,
+                   c.numero AS cliente_numero, c.bairro AS cliente_bairro,
+                   c.cidade AS cliente_cidade, c.estado AS cliente_estado,
+                   c.cep AS cliente_cep, u.nome AS vendedor_nome
             FROM pedidos p
             JOIN clientes c ON c.id = p.cliente_id
             LEFT JOIN usuarios u ON u.id = p.usuario_id

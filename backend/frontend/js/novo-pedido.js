@@ -175,10 +175,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // GESTÃO DO MODAL DE CADASTRO DE CLIENTE
     const btnCadastrarCliente = document.getElementById("btnCadastrarCliente");
-    const modalCliente = document.getElementById("modalCliente");
-    const btnFecharModalTopo = document.getElementById("btnFecharModalTopo");
-    const btnCancelarModal = document.getElementById("btnCancelarModal");
-    const formCadastrarCliente = document.getElementById("formCadastrarCliente");
     const inputCliente = document.getElementById("cliente");
     const inputClienteId = document.getElementById("clienteId");
     const boxSugestoesCliente = document.getElementById("clienteSugestoes");
@@ -225,80 +221,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // O formulário de cadastro é o mesmo da tela Clientes (js/cliente-modal.js).
+    // Ao salvar, o cliente novo já fica selecionado no pedido.
     btnCadastrarCliente.addEventListener("click", (e) => {
         e.preventDefault();
-        modalCliente.style.display = "flex";
-        document.addEventListener("keydown", prenderFocoModal);
-        document.getElementById("cliTipoPessoa").focus();
-    });
-
-    const fecharModal = () => {
-        modalCliente.style.display = "none";
-        document.removeEventListener("keydown", prenderFocoModal);
-    };
-    btnFecharModalTopo.addEventListener("click", fecharModal);
-    btnCancelarModal.addEventListener("click", fecharModal);
-
-    // Trava o Tab dentro do modal (o foco não escapa mais pra página de trás)
-    // e fecha o modal com Esc.
-    function prenderFocoModal(e) {
-        if (e.key === "Escape") {
-            fecharModal();
-            return;
-        }
-        if (e.key !== "Tab") return;
-
-        const focaveis = modalCliente.querySelectorAll(
-            'input:not([type=hidden]), select, textarea, button, a[href]'
-        );
-        const lista = Array.from(focaveis).filter(el => !el.disabled && el.offsetParent !== null);
-        if (lista.length === 0) return;
-
-        const primeiro = lista[0];
-        const ultimo = lista[lista.length - 1];
-
-        if (e.shiftKey && document.activeElement === primeiro) {
-            e.preventDefault();
-            ultimo.focus();
-        } else if (!e.shiftKey && document.activeElement === ultimo) {
-            e.preventDefault();
-            primeiro.focus();
-        }
-    }
-
-    // Alternar rótulo CPF/CNPJ conforme tipo de pessoa
-    document.getElementById("cliTipoPessoa").addEventListener("change", (e) => {
-        document.getElementById("lblDocumento").textContent = e.target.value === "Física" ? "CPF" : "CNPJ";
-    });
-
-    formCadastrarCliente.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const nome = document.getElementById("cliNome").value;
-        const telefone = document.getElementById("cliCelular").value || document.getElementById("cliTelefone").value;
-        const cpfCnpj = document.getElementById("cliCpfCnpj").value;
-        const email = document.getElementById("cliEmail").value;
-        const partesEndereco = [
-            document.getElementById("cliEndereco").value,
-            document.getElementById("cliNumero").value,
-            document.getElementById("cliBairro").value,
-            document.getElementById("cliCidade").value,
-            document.getElementById("cliEstado").value,
-            document.getElementById("cliCep").value
-        ].filter(Boolean);
-
-        try {
-            const resultado = await api.clientes.criar({
-                nome, telefone, cpf_cnpj: cpfCnpj, email,
-                endereco: partesEndereco.join(', ')
-            });
-            inputCliente.value = nome;
-            inputClienteId.value = resultado.id;
-            modalCliente.style.display = "none";
-            formCadastrarCliente.reset();
-            alert("Cliente cadastrado com sucesso!");
-        } catch (erro) {
-            alert("Erro ao cadastrar cliente: " + erro.message);
-        }
+        ClienteModal.abrir({
+            nome: inputCliente.value.trim(),
+            aoSalvar: (cliente) => {
+                inputCliente.value = cliente.nome;
+                inputClienteId.value = cliente.id;
+            }
+        });
     });
 
     ["totalFrete", "totalDesconto"].forEach(id => {

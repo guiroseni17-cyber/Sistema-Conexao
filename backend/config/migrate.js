@@ -13,7 +13,18 @@ const COLUNAS = [
     ['pedido_trocas', 'desconto', 'DECIMAL(10,2) NOT NULL DEFAULT 0'],
     // Produto pai: cada variação (modelos_base) aponta para o seu pai
     ['modelos_base', 'produto_pai_id', 'INT NULL'],
-    ['modelos_base', 'atributos', 'TEXT NULL']
+    ['modelos_base', 'atributos', 'TEXT NULL'],
+    // Cadastro completo de cliente (mesmo formulário em Clientes e no Pedido)
+    ['clientes', 'tipo_pessoa', "VARCHAR(10) NOT NULL DEFAULT 'Física'"],
+    ['clientes', 'consumidor_final', 'BOOLEAN NOT NULL DEFAULT TRUE'],
+    ['clientes', 'data_nascimento', 'DATE NULL'],
+    ['clientes', 'genero', 'VARCHAR(20) NULL'],
+    ['clientes', 'celular', 'VARCHAR(20) NULL'],
+    ['clientes', 'cep', 'VARCHAR(12) NULL'],
+    ['clientes', 'numero', 'VARCHAR(20) NULL'],
+    ['clientes', 'bairro', 'VARCHAR(100) NULL'],
+    ['clientes', 'cidade', 'VARCHAR(100) NULL'],
+    ['clientes', 'estado', 'VARCHAR(2) NULL']
 ];
 
 // Tabelas novas (criadas só se ainda não existirem)
