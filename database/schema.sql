@@ -1,5 +1,5 @@
 -- ============================================
--- FoneNinja - Schema do Banco de Dados
+-- Strock Phone - Schema do Banco de Dados
 -- ============================================
 
 

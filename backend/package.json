@@ -1,7 +1,7 @@
 {
   "name": "foneninja-backend",
   "version": "1.0.0",
-  "description": "Backend do sistema FoneNinja - gestao de estoque e pedidos de venda com controle de troca",
+  "description": "Backend do sistema Strock Phone - gestao de estoque e pedidos de venda com controle de troca",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

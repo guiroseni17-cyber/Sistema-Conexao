@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap');
 
 /* =========================================================
-   Tema FoneNinja — laranja + grafite
+   Tema Strock Phone — laranja + grafite
    (nomes antigos das variáveis mantidos para compatibilidade)
    ========================================================= */
 :root {
@@ -112,7 +112,7 @@ a { color: inherit; text-decoration: none; }
     color: #fff;
 }
 .brand .mark::after {
-    content: "F";
+    content: "S";
     font-family: 'Sora', sans-serif;
     font-size: 18px;
     font-weight: 700;
@@ -556,3 +556,98 @@ body .btn-acao:hover { filter: brightness(1.06); background: var(--gradient-prim
 
 /* Ícone do menu (alvo) */
 .nav-item[href="metas.html"] .icon { --i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/></svg>"); }
+
+
+/* =========================================================
+   TEMA TESTE — menu no topo + azul/violeta
+   Para voltar ao visual anterior, apague tudo daqui até o fim do arquivo.
+   ========================================================= */
+:root {
+    --background: #F3F5FB;
+    --bg: #F3F5FB;
+    --primary: #4F46E5;
+    --primary-dark: #3730A3;
+    --accent: #4F46E5;
+    --accent-dark: #3730A3;
+    --accent-soft: #E3E1FF;
+    --accent-soft-text: #2E2A8F;
+    --sidebar: #0B1020;
+    --sidebar-primary: #8B8CFF;
+    --sidebar-accent: #1A2140;
+    --sidebar-border: #232B4D;
+    --gradient-primary: linear-gradient(135deg, #3B82F6, #7C3AED);
+    --gradient-ink: linear-gradient(120deg, #0B1020, #141B3A);
+    --shadow-glow: 0 10px 28px -10px rgba(79,70,229,.55);
+    --shadow-soft: 0 1px 2px rgba(11,16,32,.04), 0 6px 20px -10px rgba(11,16,32,.16);
+    --border: #E2E6F2;
+    --muted: #ECEFF8;
+    --input: #D5DAEA;
+    --radius: 12px;
+}
+
+thead th { background: #F6F8FD; }
+tbody tr:hover { background: #F8F9FE; }
+.panel, .stat-card, .meta-card { border-radius: 14px; }
+.btn { border-radius: 10px; }
+
+.topbar .page-title { font-size: 26px; }
+.topbar .page-subtitle { font-size: 13px; }
+
+/* Ícone da Agenda (calendário) */
+.nav-item[href="agenda.html"] .icon { --i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='4' rx='2'/><path d='M16 2v4'/><path d='M8 2v4'/><path d='M3 10h18'/></svg>"); }
+
+/* Menu no topo (computador): 1ª linha = marca + usuário, 2ª linha = abas.
+   No celular continua a barra de baixo. */
+@media (min-width: 1024px) {
+    .app { display: block; }
+
+    .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        height: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 3px;
+        padding: 8px 24px 10px;
+        overflow: visible;
+        box-shadow: 0 6px 24px -12px rgba(11,16,32,.5);
+    }
+    .sidebar::after { content: ""; order: 2; flex: 0 0 100%; height: 0; }
+
+    .brand { order: 0; flex: 0 0 auto; padding: 0; margin-right: auto; }
+    .brand .mark { width: 32px; height: 32px; border-radius: 10px; }
+    .nav-section-label { display: none; }
+
+    .nav-item {
+        order: 3;
+        flex: 0 0 auto;
+        white-space: nowrap;
+        margin: 0;
+        padding: 7px 8px;
+        gap: 6px;
+        font-size: 13px;
+        border-radius: 999px;
+    }
+    .nav-item.active::after { display: none; }
+    .nav-item.active { background: var(--gradient-primary); color: #fff; box-shadow: var(--shadow-glow); }
+    .nav-item.active .icon { background-color: #fff; }
+
+    .sidebar-footer {
+        order: 1;
+        flex: 0 0 auto;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+    .sidebar-footer #usuario-logado { margin: 0 !important; font-size: 12px !important; }
+    .sidebar-footer a { display: inline !important; margin: 0 !important; }
+
+    .main { min-height: calc(100vh - 100px); }
+    .topbar, .content { max-width: 1280px; }
+}

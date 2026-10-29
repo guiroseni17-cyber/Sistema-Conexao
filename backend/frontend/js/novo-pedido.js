@@ -698,7 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.title = `Editar Pedido #${pedido.id}`;
             document.querySelector(".page-title").textContent = `Editar pedido #${pedido.id}`;
             document.querySelector(".page-subtitle").textContent = "Altere os dados do pedido e salve";
-            document.title = `Editar pedido #${pedido.id} - FoneNinja`;
+            document.title = `Editar pedido #${pedido.id} - Strock Phone`;
             document.querySelector("#formNovoPedido button[type='submit']").textContent = "Salvar alterações";
 
             // Cliente e vendedor

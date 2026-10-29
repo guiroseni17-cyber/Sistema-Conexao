@@ -46,7 +46,7 @@ app.use('/api/relatorios', reportRoutes);
 app.use('/api/metas', metaRoutes);
 
 app.get('/api', (req, res) => {
-    res.json({ sistema: 'FoneNinja API', status: 'online' });
+    res.json({ sistema: 'Strock Phone API', status: 'online' });
 });
 
 // Se ainda não existe nenhum usuário cadastrado, cria um admin padrão
@@ -74,7 +74,7 @@ async function garantirUsuarioAdmin() {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
-    console.log(`FoneNinja rodando em http://localhost:${PORT}`);     
+    console.log(`Strock Phone rodando em http://localhost:${PORT}`);     
     console.log('Banco de dados:', process.env.DB_HOST ? `${process.env.DB_HOST}:${process.env.DB_PORT}` : 'DB_HOST NÃO DEFINIDO (usando localhost)');
     try {
         await migrar();

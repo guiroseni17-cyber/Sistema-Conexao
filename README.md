@@ -1,4 +1,4 @@
-# FoneNinja — Sistema de Gestão para Loja
+# Strock Phone — Sistema de Gestão para Loja
 
 Sistema próprio de **vendas, estoque e compras**, com **troca automática de aparelho**:
 quando você vende um aparelho e o cliente dá outro na troca, o aparelho recebido é
@@ -62,7 +62,7 @@ dentro do plano). Depois de ter o acesso:
 4. Instale as dependências (comando `npm install`)
 5. Ligue o sistema (comando `npm start`)
 
-O terminal vai mostrar algo como `FoneNinja rodando em http://localhost:3000`. Na
+O terminal vai mostrar algo como `Strock Phone rodando em http://localhost:3000`. Na
 primeira vez que ligar, se ainda não existir nenhum usuário, o sistema cria um admin
 automaticamente e mostra no terminal:
 
