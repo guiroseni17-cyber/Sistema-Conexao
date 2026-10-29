@@ -194,6 +194,7 @@ exports.buscarPorId = async (req, res) => {
                    c.numero AS cliente_numero, c.complemento AS cliente_complemento, c.bairro AS cliente_bairro,
                    c.cidade AS cliente_cidade, c.estado AS cliente_estado,
                    c.cep AS cliente_cep, u.nome AS vendedor_nome,
+                   DATE_FORMAT(c.data_nascimento, '%d/%m/%Y') AS cliente_nascimento,
                    DATE_FORMAT(p.criado_em, '%Y-%m-%dT%H:%i') AS data_hora
             FROM pedidos p
             JOIN clientes c ON c.id = p.cliente_id

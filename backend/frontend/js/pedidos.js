@@ -21,6 +21,7 @@ async function carregarPedidos() {
                 <td class="text-right">
                     <div class="row-actions">
                         <a class="btn btn-secondary btn-sm" href="recibo.html?id=${p.id}" target="_blank">Recibo</a>
+                        ${Number(p.valor_troca) > 0 ? `<a class="btn btn-secondary btn-sm" href="termo-troca.html?id=${p.id}" target="_blank">Termo de troca</a>` : ''}
                         ${p.status !== 'cancelado' ? `
                             <a class="btn btn-secondary btn-sm" href="novo-pedido.html?id=${p.id}">Editar</a>
                             <button class="btn btn-danger btn-sm" onclick="cancelarPedido(${p.id})">Cancelar</button>
