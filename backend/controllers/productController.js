@@ -112,11 +112,15 @@ exports.criar = async (req, res) => {
             }
         }
 
+        const categoriaFinal = categoria || 'aparelho_novo';
+        // Estoque mínimo só existe para acessório
+        const minimo = categoriaFinal === 'acessorio' ? (estoque_minimo ?? 2) : 0;
+
         const [result] = await db.query(
             `INSERT INTO produtos (nome, categoria, marca, modelo, imei, condicao, quantidade, estoque_minimo, preco_custo, preco_venda, origem, observacoes, modelo_base_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'compra', ?, ?)`,
-            [nome, categoria || 'aparelho_novo', marca, modelo, imei, condicao || 'novo',
-             qtd, estoque_minimo ?? 2, preco_custo || 0, preco_venda, observacoes, base ? base.id : null]
+            [nome, categoriaFinal, marca, modelo, imei, condicao || 'novo',
+             qtd, minimo, preco_custo || 0, preco_venda, observacoes, base ? base.id : null]
         );
 
         if (qtd > 0) {
