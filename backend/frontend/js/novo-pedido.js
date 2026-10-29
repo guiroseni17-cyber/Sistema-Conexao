@@ -133,14 +133,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function adicionarLinha() {
         const novaLinha = document.createElement("tr");
         novaLinha.innerHTML = `
-            <td style="position: relative;">
-                <input type="text" class="prod-busca" placeholder="Digite para buscar no estoque..." style="width: 95%;" autocomplete="off">
-                <div class="sugestoes-box"></div>
-            </td>
-            <td><input type="number" class="prod-qtd" value="1" min="1" style="width: 80%;"></td>
-            <td><input type="number" class="prod-unit" step="0.01" value="0.00" style="width: 90%;"></td>
-            <td><input type="text" class="prod-total" readonly value="0,00" style="background-color: #e9ecef; width: 90%;"></td>
-            <td><button type="button" class="btn-remover" style="background:none; border:none; cursor:pointer; color:red; font-size:16px;">🗑️</button></td>
+            <td class="col-prod" data-label="Produto / código"><input type="text" class="prod-busca" placeholder="Digite para buscar no estoque..." autocomplete="off"><div class="sugestoes-box"></div></td>
+            <td class="col-qtd" data-label="Qtde."><input type="number" class="prod-qtd" value="1" min="1"></td>
+            <td class="col-unit" data-label="Valor unit. (R$)"><input type="number" class="prod-unit" step="0.01" value="0.00"></td>
+            <td class="col-total" data-label="Total (R$)"><input type="text" class="prod-total" readonly value="0,00"></td>
+            <td class="col-acao"><button type="button" class="btn-remover" title="Remover produto">🗑️</button></td>
         `;
         tabela.appendChild(novaLinha);
         configurarLinha(novaLinha);
@@ -159,15 +156,14 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 1; i <= qtd; i++) {
             const div = document.createElement("div");
             div.className = "linha-pagamento";
-            div.style.cssText = "display: flex; gap: 10px;";
             div.innerHTML = `
-                <select class="pag-forma" style="flex: 1;">
+                <select class="pag-forma">
                     <option value="Dinheiro">Dinheiro</option>
                     <option value="Pix">Pix</option>
                     <option value="Cartão de crédito">Cartão de crédito</option>
                     <option value="Cartão de débito">Cartão de débito</option>
                 </select>
-                <input type="number" class="pag-valor" placeholder="Valor R$ (${i})" style="width: 120px;" step="0.01">
+                <input type="number" class="pag-valor" placeholder="Valor R$ (${i})" step="0.01">
             `;
             containerParcelas.appendChild(div);
         }

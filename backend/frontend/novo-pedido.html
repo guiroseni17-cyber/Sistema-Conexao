@@ -72,6 +72,69 @@
         .up-assistente { border: 1px solid #dbe6f1; border-radius: 8px; padding: 10px 14px 14px; margin: 0; }
         .up-assistente legend { font-size: 13px; color: #444; padding: 0 6px; }
         @media (max-width: 800px) { .up-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        /* ===== Layout reorganizado (grade, sem sobreposição) ===== */
+        .venda .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 18px; margin-bottom: 16px; }
+        .venda .form-row.linha-cliente { grid-template-columns: minmax(0, 2fr) minmax(0, 1.1fr) minmax(0, .7fr); }
+        .venda .form-group { min-width: 0; }
+        .venda .form-group label { display: flex; justify-content: space-between; align-items: baseline; }
+        .venda .form-group input, .venda .form-group select, .venda .form-group textarea { width: 100%; min-height: 44px; }
+        .venda .form-group textarea { resize: vertical; }
+        .link-novo { font-size: 12px; font-weight: 700; color: var(--accent); }
+        .link-novo:hover { text-decoration: underline; }
+        .secao { padding: 22px 24px; border-radius: 16px; box-shadow: var(--shadow-soft); }
+
+        #tabelaProdutos { table-layout: fixed; margin-bottom: 14px; }
+        #tabelaProdutos th { padding: 10px 8px; }
+        #tabelaProdutos td { padding: 10px 8px; vertical-align: middle; }
+        #tabelaProdutos th:first-child, #tabelaProdutos td:first-child { padding-left: 0; }
+        #tabelaProdutos th:last-child, #tabelaProdutos td:last-child { padding-right: 0; }
+        #tabelaProdutos .col-qtd { width: 96px; }
+        #tabelaProdutos .col-unit, #tabelaProdutos .col-total { width: 158px; }
+        #tabelaProdutos .col-acao { width: 52px; text-align: center; }
+        #tabelaProdutos .col-prod { position: relative; }
+        #tabelaProdutos td input { width: 100%; min-height: 44px; padding: 10px 12px; }
+        #tabelaProdutos .prod-qtd { text-align: center; }
+        #tabelaProdutos .prod-unit, #tabelaProdutos .prod-total { text-align: right; }
+        #tabelaProdutos .prod-total { background: #F3F4F7; font-weight: 700; color: var(--text); }
+        .btn-remover { width: 40px; height: 40px; border: 1px solid transparent; background: none; border-radius: 10px; cursor: pointer; font-size: 16px; opacity: .55; }
+        .btn-remover:hover { background: rgba(223,32,46,.08); opacity: 1; }
+        .sugestao-item { padding: 12px 14px; }
+
+        .totais-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: 24px; align-items: start; }
+        .totais-ajustes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .resumo-card { background: #F7F5F1; border: 1px solid var(--border); border-radius: 14px; padding: 8px 18px; }
+        .resumo-linha { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px dashed var(--border); }
+        .resumo-linha label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+        .resumo-linha .valor { display: flex; align-items: baseline; gap: 6px; }
+        .resumo-linha .rs { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .resumo-card .resumo-linha input { width: 120px; border: 0; background: transparent; padding: 0; text-align: right; font-size: 15px; font-weight: 700; color: var(--text); box-shadow: none; }
+        .resumo-linha.destaque { border-bottom: 0; margin: 4px -18px 0; padding: 14px 18px; background: rgba(28,152,90,.10); border-radius: 0 0 14px 14px; }
+        .resumo-linha.destaque label { color: var(--green); font-size: 14px; }
+        .resumo-card .resumo-linha.destaque input { font-size: 22px; color: var(--green); width: 150px; background: transparent; border: 0; }
+
+        .pag-topo { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 18px; margin-bottom: 16px; }
+        #containerParcelas { display: flex; flex-direction: column; gap: 10px; }
+        .linha-pagamento { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 10px; }
+        .bloco-upgrade { margin-bottom: 16px; }
+        .btn-upgrade { width: 100%; padding: 14px 16px; border-width: 1.5px; border-radius: 12px; }
+        #resumoPagamento { margin-top: 12px; padding: 10px 14px; border-radius: 10px; background: #F7F5F1; border: 1px solid var(--border); }
+        .up-campo input, .up-campo select, .up-campo textarea { min-height: 42px; width: 100%; border-radius: 8px; border-color: var(--border); }
+
+        @media (max-width: 900px) {
+            .venda .form-row.linha-cliente, .totais-wrap, .pag-topo { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 760px) {
+            .secao { padding: 18px 16px; }
+            #tabelaProdutos thead { display: none; }
+            #tabelaProdutos, #tabelaProdutos tbody { display: block; }
+            #tabelaProdutos tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 14px; background: #FCFBF9; }
+            #tabelaProdutos td { display: block; padding: 0 !important; border: 0; width: auto !important; }
+            #tabelaProdutos td::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+            #tabelaProdutos .col-prod, #tabelaProdutos .col-acao { grid-column: 1 / -1; }
+            #tabelaProdutos .col-acao { text-align: right; }
+            .totais-ajustes, .linha-pagamento { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -116,9 +179,9 @@
     <form id="formNovoPedido">
         <!-- Linha 1: Cliente, Vendedor, N° Pedido -->
         <div class="secao">
-        <div class="form-row">
-            <div class="form-group" style="flex: 2;">
-                <label for="cliente">Cliente <a href="#" id="btnCadastrarCliente" style="font-size: 11px; float: right; color: #007bff;">+ Cadastrar novo cliente</a></label>
+        <div class="form-row linha-cliente">
+            <div class="form-group">
+                <label for="cliente">Cliente <a href="#" id="btnCadastrarCliente" class="link-novo">+ Cadastrar novo cliente</a></label>
                                <input type="text" id="cliente" placeholder="Pesquisar cliente existente..." required autocomplete="off">
                 <input type="hidden" id="clienteId">
                 <div id="clienteSugestoes" class="sugestoes-box"></div>
@@ -129,7 +192,7 @@
             </div>
             <div class="form-group">
                 <label for="n_pedido">N° Pedido</label>
-                <input type="text" id="n_pedido" readonly style="background-color: #e9ecef;">
+                <input type="text" id="n_pedido" readonly>
             </div>
         </div>
 
@@ -141,23 +204,20 @@
         <table id="tabelaProdutos">
             <thead>
                 <tr>
-                    <th style="width: 45%;">Produto / Código (Estoque)</th>
-                    <th style="width: 10%;">Qtde.</th>
-                    <th style="width: 15%;">Valor unit. (R$)</th>
-                    <th style="width: 20%;">Valor total (R$)</th>
-                    <th style="width: 10%;">Ações</th>
+                    <th>Produto / código (estoque)</th>
+                    <th class="col-qtd">Qtde.</th>
+                    <th class="col-unit">Valor unit. (R$)</th>
+                    <th class="col-total">Valor total (R$)</th>
+                    <th class="col-acao"></th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="position: relative;">
-                        <input type="text" class="prod-busca" placeholder="Digite para buscar no estoque..." style="width: 95%;" autocomplete="off">
-                        <div class="sugestoes-box"></div>
-                    </td>
-                    <td><input type="number" class="prod-qtd" value="1" min="1" style="width: 80%;"></td>
-                    <td><input type="number" class="prod-unit" step="0.01" value="0.00" style="width: 90%;"></td>
-                    <td><input type="text" class="prod-total" readonly value="0,00" style="background-color: #e9ecef; width: 90%;"></td>
-                    <td><button type="button" class="btn-remover" style="background:none; border:none; cursor:pointer; color:red; font-size:16px;">🗑️</button></td>
+                    <td class="col-prod" data-label="Produto / código"><input type="text" class="prod-busca" placeholder="Digite para buscar no estoque..." autocomplete="off"><div class="sugestoes-box"></div></td>
+                    <td class="col-qtd" data-label="Qtde."><input type="number" class="prod-qtd" value="1" min="1"></td>
+                    <td class="col-unit" data-label="Valor unit. (R$)"><input type="number" class="prod-unit" step="0.01" value="0.00"></td>
+                    <td class="col-total" data-label="Total (R$)"><input type="text" class="prod-total" readonly value="0,00"></td>
+                    <td class="col-acao"><button type="button" class="btn-remover" title="Remover produto">🗑️</button></td>
                 </tr>
             </tbody>
         </table>
@@ -167,41 +227,45 @@
 
         <div class="secao">
         <h3>Totais do Pedido</h3>
-        <div class="totals-grid">
-            <div class="form-group"><label>Valor dos produtos</label><input type="text" id="totalProdutos" value="0,00" readonly></div>
-            <div class="form-group"><label>Valor do frete</label><input type="text" id="totalFrete" value="0,00"></div>
-            <div class="form-group"><label>Valor do desconto</label><input type="text" id="totalDesconto" value="0,00"></div>
-            <div class="form-group"><label>Total Geral</label><input type="text" id="totalGeral" value="0,00" readonly style="color: var(--navy);"></div>
-            <div class="form-group"><label>Abatido (upgrade)</label><input type="text" id="totalUpgrade" value="0,00" readonly></div>
-            <div class="form-group"><label>A pagar</label><input type="text" id="totalAPagar" value="0,00" readonly style="color: var(--green);"></div>
+        <div class="totais-wrap">
+            <div class="totais-ajustes">
+                <div class="form-group"><label for="totalFrete">Valor do frete</label><input type="text" id="totalFrete" value="0,00" inputmode="decimal"></div>
+                <div class="form-group"><label for="totalDesconto">Valor do desconto</label><input type="text" id="totalDesconto" value="0,00" inputmode="decimal"></div>
+            </div>
+            <div class="resumo-card">
+                <div class="resumo-linha"><label for="totalProdutos">Valor dos produtos</label><span class="valor"><span class="rs">R$</span><input type="text" id="totalProdutos" value="0,00" readonly></span></div>
+                <div class="resumo-linha"><label for="totalGeral">Total geral</label><span class="valor"><span class="rs">R$</span><input type="text" id="totalGeral" value="0,00" readonly></span></div>
+                <div class="resumo-linha"><label for="totalUpgrade">Abatido (upgrade)</label><span class="valor"><span class="rs">R$</span><input type="text" id="totalUpgrade" value="0,00" readonly></span></div>
+                <div class="resumo-linha destaque"><label for="totalAPagar">A pagar</label><span class="valor"><span class="rs">R$</span><input type="text" id="totalAPagar" value="0,00" readonly></span></div>
+            </div>
         </div>
 
         </div>
 
         <div class="secao">
         <h3>Pagamento e Transporte</h3>
-        <div class="form-row">
+        <div class="pag-topo">
             <div class="form-group">
-                <label for="qtdFormasPagamento">Formas de Pagamento / Parcelas</label>
+                <label for="qtdFormasPagamento">Nº de formas de pagamento</label>
                 <input type="number" id="qtdFormasPagamento" value="1" min="1" max="10">
             </div>
-            <div class="form-group" style="flex: 2;">
-                <label>Detalhes das Formas de Pagamento</label>
-                <div id="containerParcelas" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div class="linha-pagamento" style="display: flex; gap: 10px;">
-                        <select class="pag-forma" style="flex: 1;">
+            <div class="form-group">
+                <label>Como o cliente vai pagar</label>
+                <div id="containerParcelas">
+                    <div class="linha-pagamento">
+                        <select class="pag-forma">
                             <option value="Dinheiro">Dinheiro</option>
                             <option value="Pix">Pix</option>
                             <option value="Cartão de crédito">Cartão de crédito</option>
                             <option value="Cartão de débito">Cartão de débito</option>
                         </select>
-                        <input type="number" class="pag-valor" placeholder="Valor (R$)" style="width: 120px;" step="0.01">
+                        <input type="number" class="pag-valor" placeholder="Valor (R$)" step="0.01">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div style="margin-bottom: 15px;">
+        <div class="bloco-upgrade">
             <button type="button" id="btnAddUpgrade" class="btn-upgrade">📱 + Aparelho na troca (Upgrade)</button>
 
             <div id="cardUpgrade" class="upgrade-card" style="display: none;">
