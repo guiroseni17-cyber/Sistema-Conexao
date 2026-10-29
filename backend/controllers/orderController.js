@@ -121,6 +121,51 @@ exports.proximoNumero = async (req, res) => {
     }
 };
 
+// Aceita "AAAA-MM-DD HH:MM[:SS]" (ou com T) e devolve no formato do banco; qualquer outra coisa vira null
+function dataPedidoValida(v) {
+    const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2})?$/.exec(String(v || '').trim());
+    return m ? `${m[1]} ${m[2]}${m[3] || ':00'}` : null;
+}
+
+// Pedidos de um período para a Agenda (inicio/fim = AAAA-MM-DD). A data/hora sai como texto
+// para não sofrer deslocamento de fuso horário.
+exports.agenda = async (req, res) => {
+    try {
+        const { inicio, fim } = req.query;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(inicio || '') || !/^\d{4}-\d{2}-\d{2}$/.test(fim || '')) {
+            return res.status(400).json({ erro: 'Informe inicio e fim (AAAA-MM-DD)' });
+        }
+        const [rows] = await db.query(`
+            SELECT p.id, p.status, p.valor_total, p.valor_a_pagar, p.observacoes,
+                   DATE_FORMAT(p.criado_em, '%Y-%m-%dT%H:%i:%s') AS data_hora,
+                   c.nome AS cliente_nome, c.celular AS cliente_celular, c.telefone AS cliente_telefone,
+                   u.nome AS vendedor_nome,
+                   (SELECT GROUP_CONCAT(pr.nome SEPARATOR ', ')
+                      FROM pedido_itens pi JOIN produtos pr ON pr.id = pi.produto_id
+                     WHERE pi.pedido_id = p.id) AS produtos
+            FROM pedidos p
+            JOIN clientes c ON c.id = p.cliente_id
+            LEFT JOIN usuarios u ON u.id = p.usuario_id
+            WHERE p.status != 'cancelado' AND p.criado_em >= ? AND p.criado_em < DATE_ADD(?, INTERVAL 1 DAY)
+            ORDER BY p.criado_em ASC
+        `, [inicio, fim]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao carregar a agenda', detalhe: err.message });
+    }
+};
+
+// Marca um pedido agendado (em aberto) como concluído
+exports.concluir = async (req, res) => {
+    try {
+        const [r] = await db.query("UPDATE pedidos SET status = 'finalizado' WHERE id = ? AND status = 'aberto'", [req.params.id]);
+        if (!r.affectedRows) return res.status(400).json({ erro: 'Só pedidos agendados (em aberto) podem ser concluídos' });
+        res.json({ mensagem: 'Pedido concluído' });
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao concluir pedido', detalhe: err.message });
+    }
+};
+
 // Listar pedidos (resumo, com nome do cliente e do vendedor)
 exports.listar = async (req, res) => {
     try {
@@ -148,7 +193,8 @@ exports.buscarPorId = async (req, res) => {
                    c.endereco AS cliente_endereco, c.celular AS cliente_celular,
                    c.numero AS cliente_numero, c.complemento AS cliente_complemento, c.bairro AS cliente_bairro,
                    c.cidade AS cliente_cidade, c.estado AS cliente_estado,
-                   c.cep AS cliente_cep, u.nome AS vendedor_nome
+                   c.cep AS cliente_cep, u.nome AS vendedor_nome,
+                   DATE_FORMAT(p.criado_em, '%Y-%m-%dT%H:%i') AS data_hora
             FROM pedidos p
             JOIN clientes c ON c.id = p.cliente_id
             LEFT JOIN usuarios u ON u.id = p.usuario_id
@@ -216,6 +262,8 @@ exports.criar = async (req, res) => {
             return res.status(400).json({ erro: 'Cliente e ao menos um item vendido são obrigatórios' });
         }
 
+        const dataPedidoSql = dataPedidoValida(data_pedido);
+
         let valorTotal = 0;
         for (const item of itens) {
             valorTotal += item.quantidade * item.preco_unitario;
@@ -228,10 +276,10 @@ exports.criar = async (req, res) => {
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
         const [pedidoResult] = await connection.query(
-            `INSERT INTO pedidos (cliente_id, usuario_id, status, forma_pagamento, valor_total, valor_troca, valor_a_pagar, observacoes${data_pedido ? ', criado_em' : ''})
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?${data_pedido ? ', ?' : ''})`,
-            data_pedido
-                ? [cliente_id, Number(vendedor_id) || req.user?.id || null, agendado ? 'aberto' : 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null, data_pedido]
+            `INSERT INTO pedidos (cliente_id, usuario_id, status, forma_pagamento, valor_total, valor_troca, valor_a_pagar, observacoes${dataPedidoSql ? ', criado_em' : ''})
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?${dataPedidoSql ? ', ?' : ''})`,
+            dataPedidoSql
+                ? [cliente_id, Number(vendedor_id) || req.user?.id || null, agendado ? 'aberto' : 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null, dataPedidoSql]
                 : [cliente_id, Number(vendedor_id) || req.user?.id || null, 'finalizado', formaPagamentoResumo, valorTotal, valorTroca, valorAPagar, observacoes || null]
         );
         const pedidoId = pedidoResult.insertId;
@@ -320,7 +368,7 @@ exports.editar = async (req, res) => {
             return res.status(400).json({ erro: 'Pedido cancelado não pode ser editado' });
         }
 
-        const { cliente_id, pagamentos, observacoes, itens, valor_troca, vendedor_id } = req.body;
+        const { cliente_id, pagamentos, observacoes, itens, valor_troca, vendedor_id, data_pedido, agendado } = req.body;
         if (!cliente_id || !itens || itens.length === 0) {
             await connection.rollback();
             return res.status(400).json({ erro: 'Cliente e ao menos um item vendido são obrigatórios' });
@@ -397,9 +445,9 @@ exports.editar = async (req, res) => {
         const formaPagamentoResumo = resumoFormasPagamento(pagamentos);
 
         await connection.query(
-            `UPDATE pedidos SET cliente_id=?, usuario_id=COALESCE(?, usuario_id), forma_pagamento=?, observacoes=?, valor_total=?, valor_troca=?, valor_a_pagar=?
+            `UPDATE pedidos SET cliente_id=?, usuario_id=COALESCE(?, usuario_id), criado_em=COALESCE(?, criado_em), status=IF(?, 'aberto', status), forma_pagamento=?, observacoes=?, valor_total=?, valor_troca=?, valor_a_pagar=?
              WHERE id=?`,
-            [cliente_id, Number(vendedor_id) || null, formaPagamentoResumo, observacoes || null, valorTotal, valorTrocaFinal, valorAPagar, pedidoId]
+            [cliente_id, Number(vendedor_id) || null, dataPedidoValida(data_pedido), agendado ? 1 : 0, formaPagamentoResumo, observacoes || null, valorTotal, valorTrocaFinal, valorAPagar, pedidoId]
         );
 
         await connection.query('DELETE FROM pedido_pagamentos WHERE pedido_id = ?', [pedidoId]);

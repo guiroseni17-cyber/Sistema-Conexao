@@ -234,6 +234,32 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // Data e hora do pedido: vem da Agenda (?data=AAAA-MM-DD&hora=HH:MM) ou é "agora".
+    // Data futura = pedido agendado (aparece na Agenda).
+    const inputData = document.getElementById("dataPedido");
+    const dicaData = document.getElementById("dicaData");
+    const dois = n => String(n).padStart(2, "0");
+    const dataParaInput = d => `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}T${dois(d.getHours())}:${dois(d.getMinutes())}`;
+    function atualizarDicaData() {
+        const futuro = !!inputData.value && new Date(inputData.value) > new Date();
+        dicaData.textContent = !inputData.value ? "" : futuro
+            ? "📅 Data futura: o pedido fica agendado e aparece na Agenda neste dia e horário."
+            : "Venda registrada com a data e hora ao lado.";
+        dicaData.classList.toggle("agendado", futuro);
+    }
+    inputData.addEventListener("input", atualizarDicaData);
+    (function () {
+        const q = new URLSearchParams(window.location.search);
+        let v = dataParaInput(new Date());
+        const d = q.get("data"), h = q.get("hora");
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d || "")) {
+            if (/^\d{2}:\d{2}$/.test(h || "")) v = `${d}T${h}`;
+            else if (d !== v.slice(0, 10)) v = `${d}T09:00`;
+        }
+        inputData.value = v;
+        atualizarDicaData();
+    })();
+
     // Lupa: abre a lista completa de clientes com busca e ficha do cadastro
     document.getElementById("btnBuscarCliente").addEventListener("click", () => {
         ClienteBusca.abrir({
@@ -630,6 +656,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const dados = {
                 cliente_id: Number(inputClienteId.value),
                 vendedor_id: Number(selVendedor.value) || undefined,
+                data_pedido: inputData.value ? inputData.value.replace("T", " ") + ":00" : undefined,
+                agendado: !!inputData.value && new Date(inputData.value) > new Date(),
                 itens,
                 pagamentos,
                 observacoes: observacoes.trim() || null
@@ -649,7 +677,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 resultado = await api.pedidos.criar(dados);
                 alert(`Pedido #${resultado.id} criado com sucesso.` + (dados.trocas ? (dados.trocas.length > 1 ? "\nOs aparelhos do upgrade já entraram no estoque." : "\nO aparelho do upgrade já entrou no estoque.") : ""));
             }
-            window.location.href = 'pedidos.html';
+            window.location.href = dados.agendado ? `agenda.html?data=${inputData.value.slice(0, 10)}` : 'pedidos.html';
         } catch (err) {
             alert('Erro ao salvar pedido: ' + err.message);
         }
@@ -676,6 +704,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Cliente e vendedor
             inputCliente.value = pedido.cliente_nome;
             inputClienteId.value = pedido.cliente_id;
+            if (pedido.data_hora) { inputData.value = pedido.data_hora; atualizarDicaData(); }
             await vendedoresPronto;
             if (pedido.usuario_id) {
                 // vendedor desativado depois da venda continua aparecendo no pedido antigo

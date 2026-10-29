@@ -95,6 +95,8 @@ const api = {
         criar: (dados) => apiRequest('/pedidos', { method: 'POST', body: JSON.stringify(dados) }),
         editar: (id, dados) => apiRequest(`/pedidos/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
         cancelar: (id) => apiRequest(`/pedidos/${id}/cancelar`, { method: 'PUT' }),
+        concluir: (id) => apiRequest(`/pedidos/${id}/concluir`, { method: 'PUT' }),
+        agenda: (inicio, fim) => apiRequest(`/pedidos/agenda?inicio=${inicio}&fim=${fim}`),
         dashboard: () => apiRequest('/pedidos/dashboard')
     },
     compras: {

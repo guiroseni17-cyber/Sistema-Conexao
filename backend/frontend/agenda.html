@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda - FoneNinja</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .ag-barra { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+        .ag-titulo { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; flex: 1; min-width: 180px; }
+        .topbar .page-subtitle { text-transform: none; }
+        .ag-nav { display: inline-flex; gap: 6px; }
+        .ag-nav .btn { min-width: 40px; justify-content: center; }
+        .ag-seg { display: inline-flex; background: var(--muted); border-radius: 12px; padding: 3px; }
+        .ag-seg button { border: 0; background: none; padding: 7px 16px; border-radius: 9px; font: 600 13px 'Manrope', sans-serif; color: var(--text-muted); cursor: pointer; }
+        .ag-seg button.ativo { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(18,22,29,.14); }
+        .ag-caixa { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-soft); overflow: hidden; }
+
+        .ag-mes-cab, .ag-mes { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .ag-mes-cab div { padding: 10px 8px; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: capitalize; text-align: center; border-bottom: 1px solid var(--border); }
+        .ag-mes { grid-auto-rows: minmax(112px, 1fr); }
+        .ag-dia { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 6px 6px 4px; cursor: pointer; min-width: 0; }
+        .ag-dia:nth-child(7n) { border-right: 0; }
+        .ag-dia:hover { background: #FCFBF9; }
+        .ag-dia.fora .ag-num { color: #B3B7BD; }
+        .ag-num { display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: 13px; font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+        .ag-dia.hoje .ag-num, .ag-cab-dia.hoje .ag-num { background: var(--accent); color: #fff; }
+        .ag-pill { display: block; width: 100%; text-align: left; border: 0; border-radius: 6px; padding: 2px 6px; margin-bottom: 2px; font: 600 11.5px 'Manrope', sans-serif; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--accent-soft); color: var(--accent-soft-text); border-left: 3px solid var(--accent); }
+        .ag-pill.finalizado { background: rgba(28,152,90,.12); color: #0F6B3E; border-left-color: var(--green); }
+        .ag-mais { font-size: 11.5px; font-weight: 600; color: var(--text-muted); padding: 0 6px; }
+
+        .ag-cab-semana { display: grid; border-bottom: 1px solid var(--border); }
+        .ag-cab-dia { text-align: center; padding: 8px 4px; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: capitalize; cursor: pointer; }
+        .ag-scroll { max-height: calc(100vh - 300px); min-height: 420px; overflow: auto; }
+        .ag-corpo { display: grid; position: relative; }
+        .ag-horas div { height: 56px; font-size: 11px; color: var(--text-muted); text-align: right; padding-right: 8px; transform: translateY(-7px); }
+        .ag-col { position: relative; height: 1344px; border-left: 1px solid var(--border); background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 55px, var(--border) 55px, var(--border) 56px); cursor: pointer; }
+        .ag-ev { position: absolute; border: 0; text-align: left; border-radius: 8px; padding: 4px 7px; overflow: hidden; font: 600 12px 'Manrope', sans-serif; cursor: pointer; background: var(--accent-soft); color: var(--accent-soft-text); border-left: 4px solid var(--accent); box-shadow: 0 1px 2px rgba(18,22,29,.08); }
+        .ag-ev small { display: block; font-weight: 500; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ag-ev.finalizado { background: rgba(28,152,90,.14); color: #0F6B3E; border-left-color: var(--green); }
+        .ag-agora { position: absolute; left: 0; right: 0; height: 2px; background: #DF202E; z-index: 3; pointer-events: none; }
+        .ag-agora::before { content: ""; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #DF202E; }
+
+        #ag-fundo { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(18,22,29,.5); align-items: center; justify-content: center; padding: 16px; }
+        #ag-modal { background: #fff; border-radius: 18px; width: 440px; max-width: 100%; max-height: 90vh; overflow-y: auto; padding: 22px 24px; box-shadow: 0 24px 60px -12px rgba(18,22,29,.45); }
+        #ag-modal h3 { font-size: 19px; margin-bottom: 4px; }
+        .ag-quando { color: var(--text-muted); font-size: 13.5px; margin-bottom: 14px; }
+        .ag-linha { padding: 9px 0; border-bottom: 1px dashed var(--border); }
+        .ag-linha small { display: block; font-size: 11.5px; color: var(--text-muted); }
+        .ag-linha div { font-weight: 600; font-size: 14px; word-break: break-word; }
+        .ag-acoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-top: 18px; }
+        @media (max-width: 760px) {
+            .ag-mes { grid-auto-rows: minmax(84px, 1fr); }
+            .ag-pill { font-size: 10.5px; padding: 1px 4px; }
+            .ag-corpo, .ag-cab-semana { min-width: 640px; }
+            .ag-caixa { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> FoneNinja</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="agenda.html" class="nav-item active"><span class="icon">📅</span> Agenda</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="produtos-pai.html" class="nav-item"><span class="icon">🗂</span> Produtos pai</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Agenda</div>
+                <div class="page-subtitle">Pedidos agendados e vendas por dia e horário</div>
+            </div>
+            <a href="novo-pedido.html" id="btnNovoPedido" class="btn btn-primary">+ Novo pedido</a>
+        </div>
+
+        <div class="content">
+            <div class="ag-barra">
+                <button type="button" class="btn btn-secondary" id="agHoje">Hoje</button>
+                <div class="ag-nav">
+                    <button type="button" class="btn btn-secondary" id="agAnt" aria-label="Anterior">‹</button>
+                    <button type="button" class="btn btn-secondary" id="agProx" aria-label="Próximo">›</button>
+                </div>
+                <div class="ag-titulo" id="agTitulo"></div>
+                <div class="ag-seg" id="agVisao">
+                    <button type="button" data-v="mes">Mês</button>
+                    <button type="button" data-v="semana">Semana</button>
+                    <button type="button" data-v="dia">Dia</button>
+                </div>
+            </div>
+            <div class="ag-caixa" id="agCaixa"></div>
+        </div>
+    </div>
+</div>
+
+<div id="ag-fundo"><div id="ag-modal" role="dialog" aria-modal="true"></div></div>
+
+<script src="js/api.js"></script>
+<script src="js/agenda.js"></script>
+</body>
+</html>

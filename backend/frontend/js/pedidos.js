@@ -1,5 +1,5 @@
 const statusBadge = {
-    aberto: '<span class="badge badge-amber">Aberto</span>',
+    aberto: '<span class="badge badge-amber">Agendado</span>',
     finalizado: '<span class="badge badge-green">Finalizado</span>',
     cancelado: '<span class="badge badge-red">Cancelado</span>'
 };

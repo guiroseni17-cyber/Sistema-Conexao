@@ -129,6 +129,8 @@
         .linha-pagamento .pag-obs { min-height: 44px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; width: 100%; }
         .linha-pagamento .pag-obs:focus { outline: none; border-color: var(--navy-light); box-shadow: 0 0 0 3px rgba(29,36,64,.10); }
         @media (max-width: 1100px) and (min-width: 761px) { .linha-pagamento { grid-template-columns: minmax(0, 1fr) 150px; } .linha-pagamento .pag-obs { grid-column: 1 / -1; } }
+        .dica-data { min-height: 44px; display: flex; align-items: center; font-size: 13px; color: var(--text-muted); }
+        .dica-data.agendado { color: var(--accent-soft-text); font-weight: 600; }
         #upMais { margin-top: 4px; }
         .up-resumo-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--green); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
         .up-resumo-item strong { display: block; font-size: 14px; }
@@ -158,7 +160,7 @@
         <div class="brand"><span class="mark">忍</span> FoneNinja</div>
         <div class="nav-section-label">Principal</div>
         <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
-        <a href="novo-pedido.html" class="nav-item active"><span class="icon">🛒</span> Nova venda</a>
+        <a href="agenda.html" class="nav-item active"><span class="icon">📅</span> Agenda</a>
         <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
         <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
         <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
@@ -215,6 +217,20 @@
             </div>
         </div>
 
+        </div>
+
+        <div class="secao">
+        <h3>Data e horário</h3>
+        <div class="form-row linha-data">
+            <div class="form-group">
+                <label for="dataPedido">Data e hora do pedido</label>
+                <input type="datetime-local" id="dataPedido" required>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <div id="dicaData" class="dica-data"></div>
+            </div>
+        </div>
         </div>
 
         <div class="secao">
