@@ -1,14 +1,14 @@
 const db = require('../config/db');
 
-const CATEGORIAS = ['aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca'];
+const { CATEGORIAS, normalizarCategoria } = require('../utils/categorias');
 
 // Metas criadas automaticamente na primeira vez que o sistema abre um mês
 // (sem nenhum mês anterior para copiar). Você ajusta os valores na tela.
 const PADROES = [
     { nome: 'Acessórios', palavras: 'capinha, capa, pelicula, película, carregador', categorias: 'acessorio' },
-    { nome: 'Blindagem', palavras: 'blindagem', categorias: '' },
-    { nome: 'Seguro', palavras: 'seguro', categorias: '' },
-    { nome: 'iPhones vendidos', palavras: 'iphone', categorias: 'aparelho_novo,aparelho_seminovo' }
+    { nome: 'Blindagem', palavras: 'blindagem', categorias: 'blindagem' },
+    { nome: 'Seguro', palavras: 'seguro', categorias: 'seguro' },
+    { nome: 'iPhones vendidos', palavras: 'iphone', categorias: 'iphone' }
 ];
 
 function validarMes(mes) {
@@ -132,7 +132,7 @@ exports.salvar = async (req, res) => {
         const alvo = Number(m.alvo);
         if (!Number.isFinite(alvo) || alvo < 0) return res.status(400).json({ erro: `Valor da meta "${nome}" inválido` });
 
-        const categorias = lista(m.categorias).filter(c => CATEGORIAS.includes(c));
+        const categorias = [...new Set(lista(m.categorias).map(c => normalizarCategoria(c, '')).filter(c => CATEGORIAS.includes(c)))];
         const palavras = lista(m.palavras);
         if (categorias.length === 0 && palavras.length === 0) {
             return res.status(400).json({ erro: `Na meta "${nome}", informe ao menos uma palavra ou uma categoria` });

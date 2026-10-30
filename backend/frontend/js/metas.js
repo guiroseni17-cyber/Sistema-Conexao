@@ -1,10 +1,10 @@
 // Tela "Meta do mês": mostra o progresso e (para admin) edita as metas do mês.
 
 const CATEGORIAS_META = [
-    ['aparelho_novo', 'Aparelho novo'],
-    ['aparelho_seminovo', 'Aparelho seminovo'],
-    ['acessorio', 'Acessório'],
-    ['peca', 'Peça']
+    ['iphone', 'iPhone'],
+    ['acessorio', 'Acessórios'],
+    ['blindagem', 'Blindagem'],
+    ['seguro', 'Seguro']
 ];
 
 let mesAtual = mesAtualLocal();

@@ -46,7 +46,7 @@ const ROTULOS = {
     preco_venda_atacado: 'preço atacado', quantidade: 'quantidade', estoque: 'estoque', ativo: 'ativo',
     papel: 'papel', email: 'e-mail', telefone: 'telefone', celular: 'celular', cpf_cnpj: 'CPF/CNPJ',
     imei: 'IMEI', imei2: 'IMEI 2', garantia: 'garantia', marca: 'marca', modelo: 'modelo',
-    categoria: 'categoria', condicao: 'condição', conciliado: 'conciliado', valor_recebido: 'valor recebido',
+    categoria: 'categoria', condicao: 'condição', numero_serie: 'serial', bateria: 'bateria', conciliado: 'conciliado', valor_recebido: 'valor recebido',
     descricao: 'descrição', valor: 'valor', tipo: 'tipo', endereco: 'endereço', cidade: 'cidade'
 };
 const rotulo = c => ROTULOS[c] || c.replace(/_/g, ' ');

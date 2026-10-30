@@ -1,9 +1,11 @@
 const rotulosCategoria = {
-    aparelho_novo: 'Aparelho novo',
-    aparelho_seminovo: 'Aparelho seminovo',
-    acessorio: 'Acessório',
-    peca: 'Peça'
+    iphone: 'iPhone',
+    acessorio: 'Acessórios',
+    blindagem: 'Blindagem',
+    seguro: 'Seguro'
 };
+// Só acessório e blindagem têm alerta de estoque mínimo
+const usaEstoqueMinimo = c => c === 'acessorio' || c === 'blindagem';
 
 const rotulosMovimento = {
     entrada_compra: 'Entrada (compra)',
@@ -34,7 +36,7 @@ async function carregarProdutos() {
                                 <td>${p.origem === 'troca'
                     ? `<span class="badge badge-green" title="Pedido #${p.troca_pedido_id}">${p.troca_cliente_nome ? 'De: ' + esc(p.troca_cliente_nome) : 'Troca'}${p.troca_pedido_id ? ' (#' + p.troca_pedido_id + ')' : ''}</span>`
                     : '<span class="badge badge-gray">Compra</span>'}</td>
-                <td class="text-right">${p.categoria === 'acessorio' && p.estoque_minimo > 0 && p.quantidade <= p.estoque_minimo ? `<span class="badge ${p.quantidade === 0 ? 'badge-red' : 'badge-amber'}">${p.quantidade}</span>` : p.quantidade}</td>
+                <td class="text-right">${usaEstoqueMinimo(p.categoria) && p.estoque_minimo > 0 && p.quantidade <= p.estoque_minimo ? `<span class="badge ${p.quantidade === 0 ? 'badge-red' : 'badge-amber'}">${p.quantidade}</span>` : p.quantidade}</td>
                 <td class="text-right">${formatarMoeda(p.preco_venda)}</td>
                 <td class="text-right">
                     <div class="row-actions">
@@ -113,6 +115,7 @@ async function abrirModalProduto() {
     const form = document.getElementById('form-produto');
     form.reset();
     atualizarCampoEstoqueMinimo();
+    atualizarCustoInfo();
     delete form.dataset.editId;
     form.dataset.modeloBaseId = '';
     document.getElementById('titulo-modal-produto').textContent = 'Entrada manual';
@@ -125,10 +128,20 @@ async function abrirModalProduto() {
 function fecharModalProduto() {
     document.getElementById('modal-produto').style.display = 'none';
 }
+// Mostra só o que faz sentido para a categoria: IMEI, serial, bateria e condição são de iPhone;
+// estoque mínimo é de acessório e blindagem.
 function atualizarCampoEstoqueMinimo() {
-    const ehAcessorio = document.getElementById('p-categoria').value === 'acessorio';
-    document.getElementById('p-estoque-minimo').closest('.form-group').style.display = ehAcessorio ? '' : 'none';
+    const cat = document.getElementById('p-categoria').value;
+    document.querySelectorAll('#form-produto .campo-iphone').forEach(el => el.style.display = cat === 'iphone' ? '' : 'none');
+    document.getElementById('p-estoque-minimo').closest('.form-group').style.display = usaEstoqueMinimo(cat) ? '' : 'none';
 }
+
+function atualizarCustoInfo() {
+    const compra = Number(document.getElementById('p-compra').value) || 0;
+    const desconto = Number(document.getElementById('p-desconto').value) || 0;
+    document.getElementById('p-custo-info').textContent = formatarMoeda(Math.max(compra - desconto, 0));
+}
+['p-compra', 'p-desconto'].forEach(id => document.getElementById(id).addEventListener('input', atualizarCustoInfo));
 document.getElementById('p-categoria').addEventListener('change', atualizarCampoEstoqueMinimo);
 
 async function editarProduto(id) {
@@ -139,11 +152,21 @@ async function editarProduto(id) {
     document.getElementById('p-marca').value = p.marca || '';
     document.getElementById('p-modelo').value = p.modelo || '';
     document.getElementById('p-imei').value = p.imei || '';
+    document.getElementById('p-imei2').value = p.imei2 || '';
+    document.getElementById('p-serial').value = p.numero_serie || '';
+    document.getElementById('p-bateria').value = p.bateria ?? '';
+    const selGarantia = document.getElementById('p-garantia');
+    if (p.garantia && ![...selGarantia.options].some(o => o.value === p.garantia)) selGarantia.add(new Option(p.garantia, p.garantia));
+    selGarantia.value = p.garantia || 'Sem garantia';
     document.getElementById('p-quantidade').value = p.quantidade;
     document.getElementById('p-estoque-minimo').value = p.estoque_minimo;
     atualizarCampoEstoqueMinimo();
-    document.getElementById('p-custo').value = p.preco_custo;
-    document.getElementById('p-venda').value = p.preco_venda;
+    // O estoque guarda só o custo (compra − desconto): mostra como preço de compra, sem desconto
+    document.getElementById('p-compra').value = p.preco_custo ?? '';
+    document.getElementById('p-desconto').value = '';
+    atualizarCustoInfo();
+    document.getElementById('p-venda').value = p.preco_venda || '';
+    document.getElementById('p-atacado').value = p.preco_venda_atacado ?? '';
     document.getElementById('p-obs').value = p.observacoes || '';
     document.getElementById('form-produto').dataset.editId = id;
     document.getElementById('titulo-modal-produto').textContent = 'Editar produto';
@@ -179,18 +202,28 @@ function fecharModalHistorico() {
 
 document.getElementById('form-produto').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const categoria = document.getElementById('p-categoria').value;
+    const ehIphone = categoria === 'iphone';
+    const valor = id => document.getElementById(id).value.trim();
     const dados = {
-        nome: document.getElementById('p-nome').value,
-        categoria: document.getElementById('p-categoria').value,
-        condicao: document.getElementById('p-condicao').value,
-        marca: document.getElementById('p-marca').value,
-        modelo: document.getElementById('p-modelo').value,
-        imei: document.getElementById('p-imei').value,
+        nome: valor('p-nome'),
+        categoria,
+        condicao: ehIphone ? document.getElementById('p-condicao').value : 'novo',
+        marca: valor('p-marca'),
+        modelo: valor('p-modelo'),
+        // IMEI, serial e bateria só existem em iPhone
+        imei: ehIphone ? valor('p-imei') : '',
+        imei2: ehIphone ? valor('p-imei2') : '',
+        numero_serie: ehIphone ? valor('p-serial') : '',
+        bateria: ehIphone ? valor('p-bateria') : '',
+        garantia: document.getElementById('p-garantia').value,
         quantidade: Number(document.getElementById('p-quantidade').value),
         estoque_minimo: Number(document.getElementById('p-estoque-minimo').value),
-        preco_custo: Number(document.getElementById('p-custo').value),
-        preco_venda: Number(document.getElementById('p-venda').value),
-        observacoes: document.getElementById('p-obs').value
+        preco_compra: Number(valor('p-compra')) || 0,
+        desconto: Number(valor('p-desconto')) || 0,
+        preco_venda: Number(valor('p-venda')) || 0,
+        preco_venda_atacado: valor('p-atacado'),
+        observacoes: valor('p-obs')
     };
 
     const editId = e.target.dataset.editId;

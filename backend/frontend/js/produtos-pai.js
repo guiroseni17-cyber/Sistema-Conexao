@@ -2,10 +2,10 @@
 // Produtos pai: lista com as variações dentro de cada um
 // =====================================================
 const rotulosCategoria = {
-    aparelho_novo: 'Aparelho novo',
-    aparelho_seminovo: 'Aparelho seminovo',
-    acessorio: 'Acessório',
-    peca: 'Peça'
+    iphone: 'iPhone',
+    acessorio: 'Acessórios',
+    blindagem: 'Blindagem',
+    seguro: 'Seguro'
 };
 
 let pais = [];
@@ -248,7 +248,7 @@ function abrirGerador(pai) {
     campoNome.readOnly = !!pai;
     document.querySelectorAll('#modal-variacoes .campo-novo').forEach(el => el.style.display = pai ? 'none' : '');
     ['v-marca', 'v-venda'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('v-categoria').value = 'aparelho_novo';
+    document.getElementById('v-categoria').value = 'iphone';
     document.getElementById('v-condicao').value = 'novo';
 
     // Ao adicionar num pai que já tem atributos, reaproveita os mesmos nomes (Armazenamento, Cor...)

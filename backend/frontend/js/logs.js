@@ -10,7 +10,7 @@ const ROTULOS_CAMPO = {
     trocas: 'Aparelhos na troca', nome: 'Nome', preco_venda: 'Preço de venda', preco_custo: 'Preço de custo',
     preco_venda_atacado: 'Preço atacado', ativo: 'Ativo', papel: 'Papel', email: 'E-mail', telefone: 'Telefone',
     celular: 'Celular', cpf_cnpj: 'CPF/CNPJ', imei: 'IMEI', imei2: 'IMEI 2', garantia: 'Garantia',
-    marca: 'Marca', modelo: 'Modelo', categoria: 'Categoria', condicao: 'Condição', conciliado: 'Conciliado',
+    numero_serie: 'Serial', bateria: 'Bateria', marca: 'Marca', modelo: 'Modelo', categoria: 'Categoria', condicao: 'Condição', conciliado: 'Conciliado',
     valor_recebido: 'Valor recebido', descricao: 'Descrição', valor: 'Valor', tipo: 'Tipo'
 };
 const rotuloCampo = c => ROTULOS_CAMPO[c] || c.replace(/_/g, ' ');

@@ -8,7 +8,7 @@ const { parseAtributos, limparAtributos, montarNome, rotuloDe, renomearVariacao 
  * ou uma Entrada manual dá entrada em uma variação.
  */
 
-const CATEGORIAS = ['aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca'];
+const { CATEGORIAS, normalizarCategoria } = require('../utils/categorias');
 const CONDICOES = ['novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular'];
 const MAX_VARIACOES = 500;
 
@@ -147,7 +147,7 @@ exports.criar = async (req, res) => {
 
         const pai = {
             nome: nomePai,
-            categoria: CATEGORIAS.includes(categoria) ? categoria : 'aparelho_novo',
+            categoria: normalizarCategoria(categoria),
             condicao: CONDICOES.includes(condicao) ? condicao : 'novo',
             marca: String(marca || '').trim() || null,
             preco_venda: Number(preco_venda) > 0 ? Number(preco_venda) : 0
@@ -235,7 +235,7 @@ exports.editar = async (req, res) => {
         );
         if (dup.length > 0) throw erroNegocio(`Já existe outro produto pai chamado "${novoNome}"`);
 
-        const cat = CATEGORIAS.includes(categoria) ? categoria : pai.categoria;
+        const cat = categoria ? normalizarCategoria(categoria, pai.categoria) : pai.categoria;
         const cond = CONDICOES.includes(condicao) ? condicao : pai.condicao;
         const novaMarca = String(marca || '').trim() || null;
         const preco = Number(preco_venda) >= 0 && preco_venda !== '' && preco_venda !== null && preco_venda !== undefined

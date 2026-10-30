@@ -41,7 +41,7 @@ const TABELAS = [
     `CREATE TABLE IF NOT EXISTS modelos_base (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nome VARCHAR(150) NOT NULL,
-        categoria ENUM('aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca') NOT NULL DEFAULT 'aparelho_novo',
+        categoria ENUM('iphone', 'acessorio', 'blindagem', 'seguro') NOT NULL DEFAULT 'iphone',
         condicao ENUM('novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular') DEFAULT 'novo',
         marca VARCHAR(60),
         modelo VARCHAR(100),
@@ -53,7 +53,7 @@ const TABELAS = [
     `CREATE TABLE IF NOT EXISTS produtos_pai (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nome VARCHAR(150) NOT NULL,
-        categoria ENUM('aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca') NOT NULL DEFAULT 'aparelho_novo',
+        categoria ENUM('iphone', 'acessorio', 'blindagem', 'seguro') NOT NULL DEFAULT 'iphone',
         condicao ENUM('novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular') DEFAULT 'novo',
         marca VARCHAR(60),
         preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -146,6 +146,33 @@ async function agruparVariacoesAntigas() {
     console.log(`Migração: ${soltas.length} variação(ões) antigas agrupadas em ${grupos.size} produto(s) pai`);
 }
 
+// Categorias novas: iphone / acessorio / blindagem / seguro.
+// Converte o que já existe (aparelho novo e seminovo viram "iphone", peça vira "acessorio")
+// sem perder nada: a condição (novo/seminovo) continua guardada na coluna "condicao".
+async function migrarCategorias() {
+    for (const tabela of ['produtos', 'produtos_pai', 'modelos_base']) {
+        const [cols] = await db.query(
+            `SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'categoria'`, [tabela]
+        );
+        if (!cols.length || !String(cols[0].COLUMN_TYPE).includes('aparelho_')) continue;
+
+        await db.query(`ALTER TABLE \`${tabela}\` MODIFY categoria ENUM('iphone','acessorio','blindagem','seguro','aparelho_novo','aparelho_seminovo','peca') NOT NULL DEFAULT 'iphone'`);
+        await db.query(`UPDATE \`${tabela}\` SET categoria = 'iphone' WHERE categoria IN ('aparelho_novo','aparelho_seminovo')`);
+        await db.query(`UPDATE \`${tabela}\` SET categoria = 'acessorio' WHERE categoria = 'peca'`);
+        await db.query(`ALTER TABLE \`${tabela}\` MODIFY categoria ${NEW_ENUM_SQL}`);
+        console.log(`Migração: categorias de ${tabela} convertidas para iphone/acessorio/blindagem/seguro`);
+    }
+    // As metas guardam as categorias como texto ("aparelho_novo,aparelho_seminovo")
+    await db.query(
+        `UPDATE metas_mensais
+         SET categorias = REPLACE(REPLACE(REPLACE(categorias, 'aparelho_seminovo', 'iphone'), 'aparelho_novo', 'iphone'), 'peca', 'acessorio')
+         WHERE categorias LIKE '%aparelho_%' OR categorias LIKE '%peca%'`
+    );
+}
+
+const NEW_ENUM_SQL = "ENUM('iphone','acessorio','blindagem','seguro') NOT NULL DEFAULT 'iphone'";
+
 async function migrar() {
     for (const sql of TABELAS) await db.query(sql);
     for (const [tabela, coluna, definicao] of COLUNAS) {
@@ -159,6 +186,7 @@ async function migrar() {
             console.log(`Migração: coluna ${tabela}.${coluna} criada`);
         }
     }
+    await migrarCategorias();
     await agruparVariacoesAntigas();
 }
 

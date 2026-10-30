@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { normalizarCategoria, usaEstoqueMinimo } = require('../utils/categorias');
 
 // Listar todos os produtos (com filtro opcional por busca/categoria)
 exports.listar = async (req, res) => {
@@ -15,8 +16,8 @@ exports.listar = async (req, res) => {
         const params = [];
 
         if (busca) {
-            sql += ' AND (p.nome LIKE ? OR p.modelo LIKE ? OR p.imei LIKE ?)';
-            params.push(`%${busca}%`, `%${busca}%`, `%${busca}%`);
+            sql += ' AND (p.nome LIKE ? OR p.modelo LIKE ? OR p.imei LIKE ? OR p.imei2 LIKE ? OR p.numero_serie LIKE ?)';
+            params.push(`%${busca}%`, `%${busca}%`, `%${busca}%`, `%${busca}%`, `%${busca}%`);
         }
         if (categoria) {
             sql += ' AND p.categoria = ?';
@@ -45,14 +46,59 @@ exports.buscarPorId = async (req, res) => {
     }
 };
 
+// Lê e valida os campos de um aparelho/produto (mesmos campos do formulário de upgrade):
+// preço de compra, desconto, garantia, bateria, IMEI 1/2, serial e preço de venda varejo/atacado.
+// O custo no estoque = preço de compra − desconto.
+function lerCamposDoProduto(b) {
+    const vazio = v => v === undefined || v === null || String(v).trim() === '';
+    const texto = v => (vazio(v) ? null : String(v).trim());
+
+    let custo = vazio(b.preco_custo) ? 0 : Number(b.preco_custo);
+    if (!vazio(b.preco_compra)) {
+        const compra = Number(b.preco_compra);
+        const desconto = Number(b.desconto) || 0;
+        if (isNaN(compra) || compra < 0) return { erro: 'Preço de compra inválido' };
+        if (desconto < 0 || desconto > compra) return { erro: 'O desconto não pode ser maior que o preço de compra' };
+        custo = compra - desconto;
+    }
+
+    let bateria = null;
+    if (!vazio(b.bateria)) {
+        bateria = Number(b.bateria);
+        if (isNaN(bateria) || bateria < 0 || bateria > 100) return { erro: 'A bateria deve ser um valor entre 0 e 100%' };
+    }
+
+    const imei = texto(b.imei);
+    const imei2 = texto(b.imei2);
+    if (imei && imei2 && imei === imei2) return { erro: 'IMEI 1 e IMEI 2 não podem ser iguais' };
+
+    return {
+        custo, bateria, imei, imei2,
+        numero_serie: texto(b.numero_serie),
+        garantia: texto(b.garantia),
+        atacado: vazio(b.preco_venda_atacado) ? null : Number(b.preco_venda_atacado)
+    };
+}
+
+// Algum dos IMEIs já está em outro produto ativo?
+async function imeiJaCadastrado(imei, imei2, ignorarId) {
+    const imeis = [imei, imei2].filter(Boolean);
+    if (!imeis.length) return false;
+    let sql = 'SELECT id FROM produtos WHERE ativo = TRUE AND (imei IN (?) OR imei2 IN (?))';
+    const params = [imeis, imeis];
+    if (ignorarId) { sql += ' AND id != ?'; params.push(ignorarId); }
+    const [dup] = await db.query(sql, params);
+    return dup.length > 0;
+}
+
 // Criar produto manualmente (entrada manual, não troca).
 // Pode partir de uma variação de PRODUTO PAI (modelo_base_id): os dados vêm do catálogo
 // e, se já existir no estoque um item dessa variação sem IMEI, a quantidade é somada nele.
 exports.criar = async (req, res) => {
     try {
         let {
-            nome, categoria, marca, modelo, imei, condicao,
-            quantidade, estoque_minimo, preco_custo, preco_venda, observacoes, modelo_base_id
+            nome, categoria, marca, modelo, condicao,
+            quantidade, estoque_minimo, preco_venda, observacoes, modelo_base_id
         } = req.body;
 
         let base = null;
@@ -71,25 +117,24 @@ exports.criar = async (req, res) => {
             condicao = condicao || base.condicao;
             if (preco_venda === undefined || preco_venda === null || preco_venda === '') preco_venda = base.preco_venda;
         }
+        if (preco_venda === undefined || preco_venda === null || preco_venda === '') preco_venda = 0;
 
-        if (!nome || preco_venda === undefined) {
-            return res.status(400).json({ erro: 'Nome e preço de venda são obrigatórios' });
+        if (!nome) {
+            return res.status(400).json({ erro: 'O nome do produto é obrigatório' });
         }
 
-        if (imei) {
-            const [dup] = await db.query(
-                'SELECT id FROM produtos WHERE imei = ? AND ativo = TRUE', [imei]
-            );
-            if (dup.length > 0) {
-                return res.status(400).json({ erro: 'Já existe um produto ativo cadastrado com esse IMEI' });
-            }
+        const c = lerCamposDoProduto(req.body);
+        if (c.erro) return res.status(400).json({ erro: c.erro });
+
+        if (await imeiJaCadastrado(c.imei, c.imei2, null)) {
+            return res.status(400).json({ erro: 'Já existe um produto ativo cadastrado com esse IMEI' });
         }
 
         const qtd = Number(quantidade) || 0;
         const referencia = base ? `Entrada manual (produto pai: ${modelo || base.nome})` : 'Cadastro manual do produto';
 
-        // Variação sem IMEI que já está no estoque: repõe em vez de duplicar o item
-        if (base && !imei) {
+        // Variação sem IMEI/serial que já está no estoque: repõe em vez de duplicar o item
+        if (base && !c.imei && !c.imei2 && !c.numero_serie) {
             const [existente] = await db.query(
                 'SELECT id FROM produtos WHERE modelo_base_id = ? AND ativo = TRUE AND imei IS NULL ORDER BY id LIMIT 1',
                 [base.id]
@@ -98,7 +143,7 @@ exports.criar = async (req, res) => {
                 const produtoId = existente[0].id;
                 await db.query(
                     'UPDATE produtos SET quantidade = quantidade + ?, preco_custo = IF(? > 0, ?, preco_custo) WHERE id = ?',
-                    [qtd, Number(preco_custo) || 0, Number(preco_custo) || 0, produtoId]
+                    [qtd, c.custo, c.custo, produtoId]
                 );
                 if (qtd > 0) {
                     await db.query(
@@ -115,15 +160,17 @@ exports.criar = async (req, res) => {
             }
         }
 
-        const categoriaFinal = categoria || 'aparelho_novo';
-        // Estoque mínimo só existe para acessório
-        const minimo = categoriaFinal === 'acessorio' ? (estoque_minimo ?? 2) : 0;
+        const categoriaFinal = normalizarCategoria(categoria);
+        // Estoque mínimo só existe para acessório e blindagem
+        const minimo = usaEstoqueMinimo(categoriaFinal) ? (estoque_minimo ?? 2) : 0;
 
         const [result] = await db.query(
-            `INSERT INTO produtos (nome, categoria, marca, modelo, imei, condicao, quantidade, estoque_minimo, preco_custo, preco_venda, origem, observacoes, modelo_base_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'compra', ?, ?)`,
-            [nome, categoriaFinal, marca, modelo, imei, condicao || 'novo',
-             qtd, minimo, preco_custo || 0, preco_venda, observacoes, base ? base.id : null]
+            `INSERT INTO produtos
+                (nome, categoria, marca, modelo, imei, imei2, numero_serie, bateria, garantia, condicao,
+                 quantidade, estoque_minimo, preco_custo, preco_venda, preco_venda_atacado, origem, observacoes, modelo_base_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'compra', ?, ?)`,
+            [nome, categoriaFinal, marca || null, modelo || null, c.imei, c.imei2, c.numero_serie, c.bateria, c.garantia,
+             condicao || 'novo', qtd, minimo, c.custo, preco_venda, c.atacado, observacoes || null, base ? base.id : null]
         );
 
         if (qtd > 0) {
@@ -144,29 +191,29 @@ exports.criar = async (req, res) => {
 exports.editar = async (req, res) => {
     try {
         const {
-            nome, categoria, marca, modelo, imei, condicao,
-            quantidade, estoque_minimo, preco_custo, preco_venda, observacoes
+            nome, categoria, marca, modelo, condicao,
+            quantidade, estoque_minimo, preco_venda, observacoes
         } = req.body;
 
-        if (imei) {
-            const [dup] = await db.query(
-                'SELECT id FROM produtos WHERE imei = ? AND ativo = TRUE AND id != ?', [imei, req.params.id]
-            );
-            if (dup.length > 0) {
-                return res.status(400).json({ erro: 'Já existe outro produto ativo cadastrado com esse IMEI' });
-            }
+        const c = lerCamposDoProduto(req.body);
+        if (c.erro) return res.status(400).json({ erro: c.erro });
+
+        if (await imeiJaCadastrado(c.imei, c.imei2, req.params.id)) {
+            return res.status(400).json({ erro: 'Já existe outro produto ativo cadastrado com esse IMEI' });
         }
 
         const [atual] = await db.query('SELECT quantidade FROM produtos WHERE id = ?', [req.params.id]);
         if (atual.length === 0) return res.status(404).json({ erro: 'Produto não encontrado' });
         const diferenca = Number(quantidade) - Number(atual[0].quantidade);
 
+        const categoriaFinal = normalizarCategoria(categoria);
         await db.query(
-            `UPDATE produtos SET nome=?, categoria=?, marca=?, modelo=?, imei=?, condicao=?,
-             quantidade=?, estoque_minimo=?, preco_custo=?, preco_venda=?, observacoes=? WHERE id=?`,
-   [nome, categoria, marca, modelo, imei, condicao, quantidade,
-             categoria === 'acessorio' ? (estoque_minimo ?? 2) : 0,
-             preco_custo, preco_venda, observacoes, req.params.id]
+            `UPDATE produtos SET nome=?, categoria=?, marca=?, modelo=?, imei=?, imei2=?, numero_serie=?, bateria=?,
+             garantia=?, condicao=?, quantidade=?, estoque_minimo=?, preco_custo=?, preco_venda=?, preco_venda_atacado=?,
+             observacoes=? WHERE id=?`,
+            [nome, categoriaFinal, marca || null, modelo || null, c.imei, c.imei2, c.numero_serie, c.bateria,
+             c.garantia, condicao || 'novo', quantidade, usaEstoqueMinimo(categoriaFinal) ? (estoque_minimo ?? 2) : 0,
+             c.custo, preco_venda, c.atacado, observacoes || null, req.params.id]
         );
 
         // Se a quantidade mudou na edição manual, registra no histórico

@@ -153,10 +153,10 @@ function adicionarItemCompra(tipoInicial, variacaoId) {
                     <div class="form-group">
                         <label>Categoria</label>
                         <select id="item-categoria-${id}">
-                            <option value="aparelho_novo">Aparelho novo</option>
-                            <option value="aparelho_seminovo">Aparelho seminovo</option>
-                            <option value="acessorio">Acessório</option>
-                            <option value="peca">Peça</option>
+                            <option value="iphone">iPhone</option>
+                            <option value="acessorio">Acessórios</option>
+                            <option value="blindagem">Blindagem</option>
+                            <option value="seguro">Seguro</option>
                         </select>
                     </div>
                     <div class="form-group">

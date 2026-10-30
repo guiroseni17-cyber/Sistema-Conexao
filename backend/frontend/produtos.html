@@ -35,7 +35,7 @@
         <div class="topbar">
             <div>
                 <div class="page-title">Estoque</div>
-                <div class="page-subtitle">Aparelhos, seminovos recebidos em troca, acessórios e peças</div>
+                <div class="page-subtitle">iPhones, acessórios, blindagens e seguros</div>
             </div>
             <div style="display:flex; gap:8px;">
                 <a class="btn btn-secondary somente-admin" href="produtos-pai.html">🗂 Produtos pai</a>
@@ -48,10 +48,10 @@
                 <input type="text" id="busca" placeholder="Buscar por nome, modelo ou IMEI...">
                 <select id="filtro-categoria" style="width:200px;">
                     <option value="">Todas as categorias</option>
-                    <option value="aparelho_novo">Aparelho novo</option>
-                    <option value="aparelho_seminovo">Aparelho seminovo</option>
-                    <option value="acessorio">Acessório</option>
-                    <option value="peca">Peça</option>
+                    <option value="iphone">iPhone</option>
+                    <option value="acessorio">Acessórios</option>
+                    <option value="blindagem">Blindagem</option>
+                    <option value="seguro">Seguro</option>
                 </select>
                 <select id="filtro-estoque" style="width:170px;">
                     <option value="">Todo o estoque</option>
@@ -84,7 +84,7 @@
 
 <!-- Modal simples de cadastro -->
 <div id="modal-produto" style="display:none; position:fixed; inset:0; background:rgba(18,23,43,0.45); align-items:center; justify-content:center; z-index:50;">
-    <div style="background:#fff; border-radius:8px; width:560px; max-height:88vh; overflow-y:auto; padding:24px;">
+    <div style="background:#fff; border-radius:8px; width:640px; max-width:96vw; max-height:90vh; overflow-y:auto; padding:24px;">
         <div class="flex-between" style="margin-bottom:18px;">
             <h3 style="font-size:16px;" id="titulo-modal-produto">Entrada manual</h3>
             <span style="cursor:pointer; color:#6B7080;" onclick="fecharModalProduto()">✕</span>
@@ -110,13 +110,13 @@
                 <div class="form-group">
                     <label>Categoria</label>
                     <select id="p-categoria">
-                        <option value="aparelho_novo">Aparelho novo</option>
-                        <option value="aparelho_seminovo">Aparelho seminovo</option>
-                        <option value="acessorio">Acessório</option>
-                        <option value="peca">Peça</option>
+                        <option value="iphone">iPhone</option>
+                        <option value="acessorio">Acessórios</option>
+                        <option value="blindagem">Blindagem</option>
+                        <option value="seguro">Seguro</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group campo-iphone">
                     <label>Condição</label>
                     <select id="p-condicao">
                         <option value="novo">Novo</option>
@@ -133,12 +133,46 @@
                     <label>Modelo</label>
                     <input type="text" id="p-modelo" placeholder="Ex: iPhone 13">
                 </div>
+
                 <div class="form-group">
-                    <label>IMEI</label>
+                    <label>Preço de Compra</label>
+                    <input type="number" id="p-compra" step="0.01" min="0" placeholder="Preço">
+                </div>
+                <div class="form-group">
+                    <label>Desconto</label>
+                    <input type="number" id="p-desconto" step="0.01" min="0" placeholder="R$ 0,00">
+                </div>
+                <div class="form-group">
+                    <label>Garantia</label>
+                    <select id="p-garantia">
+                        <option value="Sem garantia">Sem garantia</option>
+                        <option value="1 mês">1 mês</option>
+                        <option value="3 meses" selected>3 meses</option>
+                        <option value="6 meses">6 meses</option>
+                        <option value="12 meses">12 meses</option>
+                    </select>
+                </div>
+                <div class="form-group campo-iphone">
+                    <label>Bateria</label>
+                    <input type="number" id="p-bateria" min="0" max="100" step="1" placeholder="%">
+                </div>
+                <div class="form-group campo-iphone">
+                    <label>IMEI 1</label>
                     <div class="imei-linha">
-                        <input type="text" id="p-imei">
+                        <input type="text" id="p-imei" placeholder="14892...">
                         <button type="button" class="btn btn-secondary btn-sm" title="Abre o site de consulta e copia o IMEI para colar" onclick="consultarImei(document.getElementById('p-imei').value, this)">Consultar</button>
                     </div>
+                </div>
+                <div class="form-group campo-iphone">
+                    <label>IMEI 2</label>
+                    <div class="imei-linha">
+                        <input type="text" id="p-imei2" placeholder="12785...">
+                        <button type="button" class="btn btn-secondary btn-sm" title="Abre o site de consulta e copia o IMEI para colar" onclick="consultarImei(document.getElementById('p-imei2').value, this)">Consultar</button>
+                    </div>
+                </div>
+                <div class="form-group campo-iphone">
+                    <label>Serial</label>
+                    <input type="text" id="p-serial" placeholder="XKFHE...">
                 </div>
                 <div class="form-group">
                     <label>Quantidade</label>
@@ -148,18 +182,28 @@
                     <label>Estoque mínimo (alerta)</label>
                     <input type="number" id="p-estoque-minimo" value="2" min="0">
                 </div>
-                <div class="form-group">
-                    <label>Preço de custo (R$)</label>
-                    <input type="number" id="p-custo" step="0.01" value="0">
-                </div>
-                <div class="form-group">
-                    <label>Preço de venda (R$)</label>
-                    <input type="number" id="p-venda" step="0.01" required>
-                </div>
+
+                <fieldset class="assistente-venda full">
+                    <legend>Assistente de Venda</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Preço de Venda Varejo</label>
+                            <input type="number" id="p-venda" step="0.01" min="0" placeholder="Opcional">
+                        </div>
+                        <div class="form-group">
+                            <label>Preço de Venda Atacado</label>
+                            <input type="number" id="p-atacado" step="0.01" min="0" placeholder="Opcional">
+                        </div>
+                    </div>
+                </fieldset>
+
                 <div class="form-group full">
-                    <label>Observações</label>
-                    <textarea id="p-obs"></textarea>
+                    <label>Observações do aparelho</label>
+                    <textarea id="p-obs" rows="2" placeholder="Ex: tela com riscos, sem caixa..."></textarea>
                 </div>
+                <p class="text-muted full" style="margin:0; font-size:12.5px;">
+                    Custo no estoque: <strong id="p-custo-info">R$ 0,00</strong> (preço de compra − desconto).
+                </p>
             </div>
             <div class="flex-between mt-16">
                 <button type="button" class="btn btn-secondary" onclick="fecharModalProduto()">Cancelar</button>

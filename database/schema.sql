@@ -63,7 +63,7 @@ CREATE TABLE fornecedores (
 CREATE TABLE produtos_pai (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
-    categoria ENUM('aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca') NOT NULL DEFAULT 'aparelho_novo',
+    categoria ENUM('iphone', 'acessorio', 'blindagem', 'seguro') NOT NULL DEFAULT 'iphone',
     condicao ENUM('novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular') DEFAULT 'novo',
     marca VARCHAR(60),
     preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -80,7 +80,7 @@ CREATE TABLE produtos_pai (
 CREATE TABLE modelos_base (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
-    categoria ENUM('aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca') NOT NULL DEFAULT 'aparelho_novo',
+    categoria ENUM('iphone', 'acessorio', 'blindagem', 'seguro') NOT NULL DEFAULT 'iphone',
     condicao ENUM('novo', 'seminovo_excelente', 'seminovo_bom', 'seminovo_regular') DEFAULT 'novo',
     marca VARCHAR(60),
     modelo VARCHAR(100),
@@ -98,7 +98,7 @@ CREATE TABLE modelos_base (
 CREATE TABLE produtos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
-    categoria ENUM('aparelho_novo', 'aparelho_seminovo', 'acessorio', 'peca') NOT NULL DEFAULT 'aparelho_novo',
+    categoria ENUM('iphone', 'acessorio', 'blindagem', 'seguro') NOT NULL DEFAULT 'iphone',
     marca VARCHAR(60),
     modelo VARCHAR(100),
     imei VARCHAR(30),

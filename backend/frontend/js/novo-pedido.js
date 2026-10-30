@@ -388,7 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // o que for escolhido aqui serve de base para cadastrar o produto real no estoque.
     function catalogoUpgrade() {
         return catalogoPais
-            .filter(m => m.categoria === "aparelho_novo" || m.categoria === "aparelho_seminovo")
+            .filter(m => m.categoria === "iphone")
             .map(m => {
                 const nome = String(m.nome || "").toLowerCase();
                 // O estado do aparelho recebido vem do próprio nome da variação (Seminovo / Lacrado)
@@ -402,7 +402,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     pai_nome: m.pai_nome || m.modelo || m.nome,
                     marca: m.marca,
                     modelo: m.modelo || m.pai_nome,
-                    categoria: condicao === "novo" ? "aparelho_novo" : "aparelho_seminovo",
+                    categoria: "iphone",
                     condicao
                 };
             });
@@ -562,7 +562,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 nome,
                 marca: document.getElementById("upMarca").value.trim(),
                 modelo: document.getElementById("upModelo").value.trim(),
-                categoria: condicao === "novo" ? "aparelho_novo" : "aparelho_seminovo",
+                categoria: "iphone",
                 condicao
             };
         } else if (upSel) {

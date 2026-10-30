@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { normalizarCategoria } = require('../utils/categorias');
 
 // Monta um texto curto tipo "Pix + Cartão de crédito 3x" a partir da lista
 // de formas de pagamento, só para exibição rápida nas listagens/relatórios.
@@ -62,7 +63,7 @@ async function registrarTroca(connection, pedidoId, troca, usuarioId) {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 'troca', ?, ?)`,
         [
             troca.nome,
-            troca.categoria || 'aparelho_seminovo',
+            normalizarCategoria(troca.categoria),
             troca.marca || null,
             troca.modelo || null,
             troca.imei || null,
@@ -240,7 +241,7 @@ exports.buscarPorId = async (req, res) => {
  *   itens: [ { produto_id: 5, quantidade: 1, preco_unitario: 1500 } ],
  *   troca: {
  *     nome: "iPhone 11 128GB",
- *     categoria: "aparelho_seminovo",
+ *     categoria: "iphone",
  *     marca: "Apple",
  *     modelo: "iPhone 11",
  *     imei: "123456789012345",
@@ -538,7 +539,7 @@ exports.dashboard = async (req, res) => {
         const [[totalProdutos]] = await db.query('SELECT COUNT(*) AS total, SUM(quantidade) AS total_unidades FROM produtos WHERE ativo = TRUE');
         const [[totalPedidosHoje]] = await db.query(`SELECT COUNT(*) AS total, COALESCE(SUM(valor_total),0) AS faturamento FROM pedidos WHERE DATE(criado_em) = CURDATE() AND status != 'cancelado'`);
         const [[totalClientes]] = await db.query('SELECT COUNT(*) AS total FROM clientes');
-        const [estoqueBaixo] = await db.query(`SELECT * FROM produtos WHERE ativo = TRUE AND categoria = 'acessorio' AND estoque_minimo > 0 AND quantidade <= estoque_minimo ORDER BY quantidade ASC LIMIT 5`);
+        const [estoqueBaixo] = await db.query(`SELECT * FROM produtos WHERE ativo = TRUE AND categoria IN ('acessorio', 'blindagem') AND estoque_minimo > 0 AND quantidade <= estoque_minimo ORDER BY quantidade ASC LIMIT 5`);
         const [ultimosPedidos] = await db.query(`
             SELECT p.id, p.valor_total, p.criado_em, c.nome AS cliente_nome
             FROM pedidos p JOIN clientes c ON c.id = p.cliente_id

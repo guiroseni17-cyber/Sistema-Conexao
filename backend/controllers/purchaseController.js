@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { normalizarCategoria } = require('../utils/categorias');
 
 exports.listar = async (req, res) => {
     try {
@@ -50,7 +51,7 @@ exports.buscarPorId = async (req, res) => {
  *
  *     // Produto novo, criado direto pela compra:
  *     { produto_id: null, quantidade: 1, preco_custo_unitario: 1200,
- *       nome: "iPhone 12 128GB", categoria: "aparelho_novo", marca: "Apple",
+ *       nome: "iPhone 12 128GB", categoria: "iphone", marca: "Apple",
  *       modelo: "iPhone 12", imei: "123...", condicao: "novo", preco_venda: 1800 }
  *   ]
  * }
@@ -149,7 +150,7 @@ exports.criar = async (req, res) => {
                     const precoVenda = Number(item.preco_venda) > 0 ? Number(item.preco_venda) : Number(m.preco_venda || 0);
                     const [novoProduto] = await connection.query(
                         `INSERT INTO produtos (nome, categoria, marca, modelo, imei, condicao, quantidade, estoque_minimo, preco_custo, preco_venda, origem, modelo_base_id)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, IF(? = 'acessorio', 2, 0), ?, ?, 'compra', ?)`,
+                         VALUES (?, ?, ?, ?, ?, ?, ?, IF(? IN ('acessorio', 'blindagem'), 2, 0), ?, ?, 'compra', ?)`,
                         [m.nome, m.categoria, m.marca, m.modelo, imei, m.condicao, quantidade, m.categoria, precoCusto, precoVenda, m.id]
                     );
                     produtoId = novoProduto.insertId;
@@ -176,7 +177,7 @@ exports.criar = async (req, res) => {
                     `INSERT INTO produtos (nome, categoria, marca, modelo, imei, condicao, quantidade, preco_custo, preco_venda, origem)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'compra')`,
                     [
-                        item.nome, item.categoria || 'aparelho_novo', item.marca || null, item.modelo || null,
+                        item.nome, normalizarCategoria(item.categoria), item.marca || null, item.modelo || null,
                         item.imei || null, item.condicao || 'novo', quantidade, precoCusto, item.preco_venda || 0
                     ]
                 );
