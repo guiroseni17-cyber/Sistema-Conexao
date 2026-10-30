@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strock Phone - Logs</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand"><span class="mark">忍</span> Strock Phone</div>
+        <div class="nav-section-label">Principal</div>
+        <a href="index.html" class="nav-item"><span class="icon">▤</span> Dashboard</a>
+        <a href="agenda.html" class="nav-item"><span class="icon">📅</span> Agenda</a>
+        <a href="pedidos.html" class="nav-item"><span class="icon">🧾</span> Pedidos de venda</a>
+        <a href="compras.html" class="nav-item"><span class="icon">📥</span> Compras</a>
+        <a href="relatorios.html" class="nav-item"><span class="icon">📊</span> Relatórios</a>
+        <a href="lucro-real.html" class="nav-item somente-admin"><span class="icon">💰</span> Lucro real</a>
+        <div class="nav-section-label">Cadastros</div>
+        <a href="produtos.html" class="nav-item"><span class="icon">📦</span> Estoque</a>
+        <a href="produtos-pai.html" class="nav-item"><span class="icon">🗂</span> Produtos pai</a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👤</span> Clientes</a>
+        <a href="fornecedores.html" class="nav-item"><span class="icon">🚚</span> Fornecedores</a>
+        <a href="equipe.html" class="nav-item somente-admin"><span class="icon">🧑‍💼</span> Equipe</a>
+        <div class="sidebar-footer">
+            <div id="usuario-logado" style="color:#fff; font-weight:600; margin-bottom:8px; font-size:13px;"></div>
+            <a href="minha-conta.html" style="display:block; margin-bottom:8px;">Trocar minha senha</a>
+            <a href="#" class="sair-link" onclick="logout()">Sair</a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-title">Logs</div>
+                <div class="page-subtitle">Tudo o que cada pessoa faz no sistema, com data, hora e o que mudou</div>
+            </div>
+            <button class="btn btn-secondary" onclick="carregarLogs(1)">↻ Atualizar</button>
+        </div>
+
+        <div class="content">
+            <div class="panel" style="margin-bottom:16px;">
+                <form id="form-filtros" class="logs-filtros" onsubmit="event.preventDefault(); carregarLogs(1);">
+                    <div class="form-group"><label>De</label><input type="date" id="f-de"></div>
+                    <div class="form-group"><label>Até</label><input type="date" id="f-ate"></div>
+                    <div class="form-group"><label>Usuário</label>
+                        <select id="f-usuario"><option value="">Todos</option></select></div>
+                    <div class="form-group"><label>Área</label>
+                        <select id="f-area"><option value="">Todas</option></select></div>
+                    <div class="form-group"><label>Buscar</label>
+                        <input type="text" id="f-busca" placeholder="Nº do pedido, cliente, produto..."></div>
+                    <div class="form-group">
+                        <label class="check"><input type="checkbox" id="f-falhas"> Só falhas e bloqueios</label>
+                        <label class="check"><input type="checkbox" id="f-navegacao"> Incluir telas abertas</label>
+                    </div>
+                    <div class="form-group"><button type="submit" class="btn btn-primary" style="width:100%;">Filtrar</button></div>
+                </form>
+            </div>
+
+            <div class="panel">
+                <table>
+                    <thead>
+                        <tr><th>Quando</th><th>Quem</th><th>Área</th><th>O que fez</th></tr>
+                    </thead>
+                    <tbody id="tabela-logs">
+                        <tr><td colspan="4" class="text-muted">Carregando...</td></tr>
+                    </tbody>
+                </table>
+                <div class="logs-rodape">
+                    <span id="logs-resumo"></span>
+                    <span>
+                        <button class="btn btn-secondary btn-sm" id="btn-anterior" onclick="carregarLogs(paginaAtual - 1)">← Mais recentes</button>
+                        <button class="btn btn-secondary btn-sm" id="btn-proxima" onclick="carregarLogs(paginaAtual + 1)">Mais antigos →</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/logs.js"></script>
+</body>
+</html>

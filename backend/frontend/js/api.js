@@ -10,6 +10,7 @@ function getUsuarioLogado() {
 }
 
 function logout() {
+    registrarEvento('logout');
     localStorage.removeItem('foneninja_token');
     localStorage.removeItem('foneninja_usuario');
     window.location.href = 'login.html';
@@ -258,4 +259,83 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (!algumVisivel) rotulo.style.display = 'none';
     });
+});
+
+
+// ---------- Logs: avisos do navegador para o servidor ----------
+// Avisa o servidor de algo que só o navegador sabe (saiu, abriu tela, imprimiu).
+// Nunca atrapalha o uso: se falhar, ignora.
+function registrarEvento(acao, extra = {}) {
+    try {
+        const token = getToken();
+        if (!token) return;
+        fetch(`${API_BASE}/logs/evento`, {
+            method: 'POST',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ acao, ...extra })
+        }).catch(() => {});
+    } catch (e) { /* ignora */ }
+}
+
+api.logs = {
+    listar: (params = '') => apiRequest(`/logs${params}`),
+    detalhe: (id) => apiRequest(`/logs/${id}`)
+};
+
+// Registra cada tela aberta (só se a pessoa realmente tem acesso a ela)
+(function avisarTelaAberta() {
+    const pagina = window.location.pathname.split('/').pop() || 'index.html';
+    if (pagina === 'login.html' || !getToken()) return;
+    const usuario = getUsuarioLogado();
+    if (usuario && usuario.papel !== 'admin' && !PAGINAS_VENDEDOR.includes(pagina)) return;
+    registrarEvento('pagina.abrir', { pagina, id: new URLSearchParams(window.location.search).get('id') || undefined });
+})();
+
+// ---------- Menu "Administração" (só administrador) ----------
+// Junta Lucro real, Equipe e Logs num menu suspenso na barra de cima.
+document.addEventListener('DOMContentLoaded', () => {
+    const usuario = getUsuarioLogado();
+    const barra = document.querySelector('.sidebar');
+    if (!usuario || usuario.papel !== 'admin' || !barra || barra.querySelector('.nav-grupo')) return;
+
+    const itens = [
+        ['lucro-real.html', '💰', 'Lucro real'],
+        ['equipe.html', '🧑‍💼', 'Equipe'],
+        ['logs.html', '📜', 'Logs']
+    ];
+    // Tira os links soltos (se a página ainda tiver) e põe tudo dentro do menu
+    itens.forEach(([href]) => barra.querySelectorAll(`a.nav-item[href="${href}"]`).forEach(a => a.remove()));
+
+    const pagina = window.location.pathname.split('/').pop() || 'index.html';
+    const ativo = itens.some(([href]) => href === pagina);
+
+    const grupo = document.createElement('div');
+    grupo.className = 'nav-grupo' + (ativo ? ' aberto-ativo' : '');
+    grupo.innerHTML = `
+        <button type="button" class="nav-item nav-grupo-btn${ativo ? ' active' : ''}" aria-haspopup="true" aria-expanded="false">
+            <span class="icon">🛡</span> Administração <span class="seta">▾</span>
+        </button>
+        <div class="nav-submenu">
+            ${itens.map(([href, icone, nome]) =>
+                `<a href="${href}" class="nav-item${href === pagina ? ' active' : ''}"><span class="icon">${icone}</span> ${nome}</a>`).join('')}
+        </div>`;
+
+    const rodape = barra.querySelector('.sidebar-footer');
+    barra.insertBefore(grupo, rodape);
+
+    const botao = grupo.querySelector('.nav-grupo-btn');
+    const fechar = () => { grupo.classList.remove('aberto'); botao.setAttribute('aria-expanded', 'false'); };
+    botao.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const abrir = !grupo.classList.contains('aberto');
+        if (abrir) {
+            // Se o botão está perto da borda direita, abre o menu para a esquerda
+            grupo.classList.toggle('alinha-direita', botao.getBoundingClientRect().left + 230 > window.innerWidth);
+        }
+        grupo.classList.toggle('aberto', abrir);
+        botao.setAttribute('aria-expanded', String(abrir));
+    });
+    document.addEventListener('click', (e) => { if (!grupo.contains(e.target)) fechar(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fechar(); });
 });

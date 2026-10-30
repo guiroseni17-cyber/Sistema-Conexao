@@ -147,3 +147,8 @@ async function carregarRecibo() {
 }
 
 carregarRecibo();
+
+// Log: registra quando alguém imprime o recibo
+window.addEventListener('beforeprint', () => {
+    registrarEvento('recibo.imprimir', { id: new URLSearchParams(window.location.search).get('id') });
+});

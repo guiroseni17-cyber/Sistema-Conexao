@@ -84,6 +84,30 @@ const TABELAS = [
         conciliado BOOLEAN NOT NULL DEFAULT FALSE,
         usuario_id INT NULL,
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+    // Logs: registro de tudo que cada pessoa faz no sistema (tela Administração > Logs)
+    `CREATE TABLE IF NOT EXISTS logs_atividade (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        criado_em DATETIME NOT NULL,
+        usuario_id INT NULL,
+        usuario_nome VARCHAR(120) NULL,
+        usuario_papel VARCHAR(20) NULL,
+        area VARCHAR(30) NOT NULL,
+        acao VARCHAR(60) NOT NULL,
+        descricao VARCHAR(600) NOT NULL,
+        entidade VARCHAR(40) NULL,
+        entidade_id INT NULL,
+        sucesso BOOLEAN NOT NULL DEFAULT TRUE,
+        metodo VARCHAR(8) NULL,
+        rota VARCHAR(255) NULL,
+        status_http SMALLINT NULL,
+        ip VARCHAR(60) NULL,
+        dispositivo VARCHAR(200) NULL,
+        dados MEDIUMTEXT NULL,
+        INDEX idx_logs_data (criado_em),
+        INDEX idx_logs_usuario (usuario_id, criado_em),
+        INDEX idx_logs_area (area, criado_em),
+        INDEX idx_logs_entidade (entidade, entidade_id)
     )`
 ];
 

@@ -105,3 +105,8 @@ async function carregarTermo() {
 }
 
 carregarTermo();
+
+// Log: registra quando alguém imprime o termo
+window.addEventListener('beforeprint', () => {
+    registrarEvento('termo.imprimir', { id: new URLSearchParams(window.location.search).get('id') });
+});

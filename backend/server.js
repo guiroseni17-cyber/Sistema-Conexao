@@ -7,6 +7,7 @@ require('dotenv').config();
 const db = require('./config/db');
 const { migrar } = require('./config/migrate');
 const { autenticar } = require('./middleware/auth');
+const { auditoria, auditoriaLogin } = require('./middleware/auditoria');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -20,6 +21,7 @@ const purchaseRoutes = require('./routes/purchases');
 const reportRoutes = require('./routes/reports');
 const metaRoutes = require('./routes/metas');
 const financeRoutes = require('./routes/finance');
+const logRoutes = require('./routes/logs');
 
 const app = express();
 
@@ -30,10 +32,13 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 // Login não exige token (é ele quem gera o token)
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', auditoriaLogin, authRoutes);
 
 // A partir daqui, toda rota de API exige login
 app.use('/api', autenticar);
+
+// Registra tudo o que cada pessoa faz (tela Administração > Logs)
+app.use('/api', auditoria);
 
 app.use('/api/usuarios', userRoutes);
 app.use('/api/produtos', productRoutes);
@@ -46,6 +51,7 @@ app.use('/api/compras', purchaseRoutes);
 app.use('/api/relatorios', reportRoutes);
 app.use('/api/metas', metaRoutes);
 app.use('/api/financeiro', financeRoutes);
+app.use('/api/logs', logRoutes);
 
 app.get('/api', (req, res) => {
     res.json({ sistema: 'Strock Phone API', status: 'online' });
