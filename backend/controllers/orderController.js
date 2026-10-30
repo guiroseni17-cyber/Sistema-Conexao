@@ -205,7 +205,7 @@ exports.buscarPorId = async (req, res) => {
         if (pedido.length === 0) return res.status(404).json({ erro: 'Pedido não encontrado' });
 
         const [itens] = await db.query(`
-            SELECT pi.*, pr.nome AS produto_nome, pr.modelo, pr.imei, pr.imei2, pr.garantia
+            SELECT pi.*, pr.nome AS produto_nome, pr.modelo, pr.imei, pr.imei2, pr.bateria, pr.garantia
             FROM pedido_itens pi JOIN produtos pr ON pr.id = pi.produto_id
             WHERE pi.pedido_id = ?
         `, [pedidoId]);

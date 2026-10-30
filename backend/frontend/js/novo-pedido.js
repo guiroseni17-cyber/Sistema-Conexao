@@ -23,6 +23,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+   // Como o produto aparece na venda: nome + IMEI + bateria (não mostra o produto pai)
+    function descricaoProduto(p) {
+        const partes = [p.nome];
+        if (p.imei) partes.push(`IMEI ${p.imei}`);
+        if (p.bateria !== null && p.bateria !== undefined && p.bateria !== "") partes.push(`Bateria ${p.bateria}%`);
+        return partes.join(" · ");
+    }
+
    let produtosEstoque = []; // vem da API real (/api/produtos)
     let catalogoPais = [];    // variações dos produtos pai (/api/modelos) — só referência, não é estoque
     async function carregarEstoque() {
@@ -101,7 +109,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const filtrados = produtosEstoque.filter(p =>
                 p.quantidade > 0 && (
                     p.nome.toLowerCase().includes(termo) ||
-                    (p.modelo && p.modelo.toLowerCase().includes(termo))
+                    (p.modelo && p.modelo.toLowerCase().includes(termo)) ||
+                    (p.imei && p.imei.includes(termo))
                 )
             );
             if (filtrados.length > 0) {
@@ -109,10 +118,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 filtrados.forEach(prod => {
                     const item = document.createElement("div");
                     item.className = "sugestao-item";
-                    const rotuloModelo = prod.modelo ? ` - ${prod.modelo}` : '';
-                    item.textContent = `${prod.nome}${rotuloModelo} — R$ ${Number(prod.preco_venda).toFixed(2)} (estoque: ${prod.quantidade})`;
+                    item.textContent = `${descricaoProduto(prod)} — R$ ${Number(prod.preco_venda).toFixed(2)} (estoque: ${prod.quantidade})`;
                     item.addEventListener("click", () => {
-                        inputBusca.value = `${prod.nome}${rotuloModelo}`;
+                        inputBusca.value = descricaoProduto(prod);
                         inputUnit.value = Number(prod.preco_venda).toFixed(2);
                         linha.dataset.produtoId = prod.id;
                         boxSugestoes.style.display = "none";
@@ -726,7 +734,7 @@ document.addEventListener("DOMContentLoaded", () => {
             pedido.itens.forEach(item => {
                 const linha = adicionarLinha();
                 linha.dataset.produtoId = item.produto_id;
-                linha.querySelector(".prod-busca").value = `${item.produto_nome}${item.modelo ? ' - ' + item.modelo : ''}`;
+                linha.querySelector(".prod-busca").value = descricaoProduto({ nome: item.produto_nome, imei: item.imei, bateria: item.bateria });
                 linha.querySelector(".prod-qtd").value = item.quantidade;
                 linha.querySelector(".prod-unit").value = Number(item.preco_unitario).toFixed(2);
             });
