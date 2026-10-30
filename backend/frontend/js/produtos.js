@@ -38,6 +38,7 @@ async function carregarProdutos() {
                 <td class="text-right">${formatarMoeda(p.preco_venda)}</td>
                 <td class="text-right">
                     <div class="row-actions">
+                        ${p.imei ? `<button class="btn btn-secondary btn-sm" data-imei="${esc(p.imei)}" title="Abre o site de consulta e copia o IMEI" onclick="consultarImei(this.dataset.imei, this)">Consultar IMEI</button>` : ''}
                         <button class="btn btn-secondary btn-sm" data-nome="${esc(p.nome)}" onclick="verHistorico(${p.id}, this.dataset.nome)">Histórico</button>
                         ${getUsuarioLogado()?.papel === 'admin' ? `<button class="btn btn-secondary btn-sm" onclick="editarProduto(${p.id})">Editar</button>` : ''}
                     </div>

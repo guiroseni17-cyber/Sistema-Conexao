@@ -166,6 +166,23 @@ function formatarData(dataStr) {
     return new Date(dataStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+// Site para consultar se o aparelho está impedido pelo IMEI
+const URL_CONSULTA_IMEI = 'https://www.consultaaparelhoimpedido.com.br/public-web/home?cid=1823914';
+
+// Abre o site da consulta em outra aba e, se houver IMEI, já deixa copiado para você só colar lá
+function consultarImei(imei, botao) {
+    const numero = String(imei || '').replace(/\D/g, '');
+    if (numero && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(numero).then(() => {
+            if (!botao) return;
+            const original = botao.textContent;
+            botao.textContent = 'IMEI copiado ✓';
+            setTimeout(() => { botao.textContent = original; }, 2500);
+        }).catch(() => {});
+    }
+    window.open(URL_CONSULTA_IMEI, '_blank', 'noopener');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const elemUsuario = document.getElementById('usuario-logado');
     const usuario = getUsuarioLogado();

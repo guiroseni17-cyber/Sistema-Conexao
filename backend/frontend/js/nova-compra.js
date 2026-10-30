@@ -133,7 +133,10 @@ function adicionarItemCompra(tipoInicial, variacaoId) {
                 <div class="form-grid" style="margin-top:10px;">
                     <div class="form-group">
                         <label>IMEI (opcional — se informar, a quantidade é 1)</label>
-                        <input type="text" id="item-pai-imei-${id}">
+                        <div class="imei-linha">
+                            <input type="text" id="item-pai-imei-${id}">
+                            <button type="button" class="btn btn-secondary btn-sm" title="Abre o site de consulta e copia o IMEI para colar" onclick="consultarImei(document.getElementById('item-pai-imei-${id}').value, this)">Consultar</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Preço de venda (R$)</label>
@@ -175,7 +178,10 @@ function adicionarItemCompra(tipoInicial, variacaoId) {
                     </div>
                     <div class="form-group">
                         <label>IMEI</label>
-                        <input type="text" id="item-imei-${id}">
+                        <div class="imei-linha">
+                            <input type="text" id="item-imei-${id}">
+                            <button type="button" class="btn btn-secondary btn-sm" title="Abre o site de consulta e copia o IMEI para colar" onclick="consultarImei(document.getElementById('item-imei-${id}').value, this)">Consultar</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Preço de venda sugerido (R$)</label>

@@ -135,7 +135,10 @@
                 </div>
                 <div class="form-group">
                     <label>IMEI</label>
-                    <input type="text" id="p-imei">
+                    <div class="imei-linha">
+                        <input type="text" id="p-imei">
+                        <button type="button" class="btn btn-secondary btn-sm" title="Abre o site de consulta e copia o IMEI para colar" onclick="consultarImei(document.getElementById('p-imei').value, this)">Consultar</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Quantidade</label>

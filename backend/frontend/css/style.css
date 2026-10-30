@@ -728,3 +728,9 @@ tbody tr:hover { background: #F8F9FE; }
     .sidebar > .nav-item, .nav-grupo-btn { font-size: 12.5px; padding: 7px 7px; gap: 5px; }
 }
 .log-detalhe p { margin: 10px 0 0; font-size: 13px; }
+
+
+/* Campo de IMEI com botão "Consultar" ao lado */
+.imei-linha { display: flex; gap: 8px; align-items: center; }
+.imei-linha input { flex: 1; min-width: 0; }
+.imei-linha .btn { white-space: nowrap; flex: 0 0 auto; }

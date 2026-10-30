@@ -390,11 +390,17 @@
                             </div>
                             <div class="up-campo">
                                 <label for="upImei">IMEI 1</label>
-                                <input type="text" id="upImei" placeholder="14892...">
+                                <div class="imei-linha">
+                                    <input type="text" id="upImei" placeholder="14892...">
+                                    <button type="button" class="btn btn-secondary btn-sm" title="Abre o site de consulta e copia o IMEI para colar" onclick="consultarImei(document.getElementById('upImei').value, this)">Consultar</button>
+                                </div>
                             </div>
                             <div class="up-campo">
                                 <label for="upImei2">IMEI 2</label>
-                                <input type="text" id="upImei2" placeholder="12785...">
+                                <div class="imei-linha">
+                                    <input type="text" id="upImei2" placeholder="12785...">
+                                    <button type="button" class="btn btn-secondary btn-sm" title="Abre o site de consulta e copia o IMEI para colar" onclick="consultarImei(document.getElementById('upImei2').value, this)">Consultar</button>
+                                </div>
                             </div>
                             <div class="up-campo">
                                 <label for="upSerial">Serial</label>
