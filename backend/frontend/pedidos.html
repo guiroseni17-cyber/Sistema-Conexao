@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Strock Phone - Pedidos de venda</title>
 <link rel="stylesheet" href="css/style.css">
+<style>
+    /* Esta tela ocupa a largura toda da página e a tabela se ajusta, sem barra de rolagem */
+    .topbar, .content { max-width: none; }
+    .tabela-pedidos { table-layout: auto; }
+    .tabela-pedidos thead th, .tabela-pedidos tbody td { padding-left: 12px; padding-right: 12px; }
+    .tabela-pedidos .btn { white-space: nowrap; }
+    .tabela-pedidos .row-actions { flex-wrap: wrap; }
+    .tabela-pedidos td:first-child, .tabela-pedidos td:nth-child(n+4):not(:last-child) { white-space: nowrap; }
+    @media (min-width: 1250px) { .tabela-pedidos td:last-child { min-width: 330px; } }
+</style>
 </head>
 <body>
 <div class="app">
@@ -42,7 +52,7 @@
 
         <div class="content">
             <div class="panel">
-                <table>
+                <table class="tabela-pedidos">
                     <thead>
                         <tr>
                             <th>Pedido</th><th>Cliente</th><th>Vendedor</th><th>Data</th><th>Troca?</th>
